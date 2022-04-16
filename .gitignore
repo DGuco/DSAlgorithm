@@ -1,6 +1,19 @@
 # Prerequisites
 *.d
 
+# vs Object files
+*.vc*
+*.VC*
+*.user
+*.sln
+*.xml
+*.iml
+*.stash
+**/debug/
+**/release/
+**/.vs/
+**/cmake-build-debug/
+
 # Compiled Object files
 *.slo
 *.lo
