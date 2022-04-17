@@ -350,6 +350,11 @@ T RBTree<T>::maximum()
 template<class T>
 RBTNode<T> *RBTree<T>::successor(RBTNode<T> *x)
 {
+    if(x == NULL)
+    {
+        return NULL;
+    }
+
     // 如果x存在右孩子，则"x的后继结点"为 "以其右孩子为根的子树的最小结点"。
     if (x->right != NULL)
         return minimum(x->right);
@@ -505,7 +510,7 @@ void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
                 node = gparent;      //  (04) 将“祖父节点”设为“当前节点”(红色节点)
             }else  //红黑树特性,空节点或者黑色的非空节点都为黑色节点(叔叔是黑色)
             {
-                if(1) //实现方法1  算法导论
+                if(0) //实现方法1  算法导论
                 {
                     // Case 2：叔叔是黑色，且当前节点是右孩子
                     if (parent->right == node)
@@ -522,64 +527,63 @@ void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
                     rightRotate(root, gparent);      //(03) 以“祖父节点”为支点进行右旋。
                 }
 
-                if (0)  //实现方法2 java jdk TreeMap(fixAfterInsertion)
+                if (1)  //实现方法2 java jdk TreeMap(fixAfterInsertion)
                 {
                     if (parent->right == node)
                     {
                         node = parent;
                         leftRotate(root,node);
                     }
+                    //如意如果parent->right == node，这里的rb_parent(node)是对左旋之后的树进行操作，最终的结果和方法1是一样的
                     rb_set_black(rb_parent(node));
                     rb_set_red(rb_parent(rb_parent(node)));
                     rightRotate(root,rb_parent(rb_parent(node)));
                 }
 
-                if (0) //实现方法3
-                {
-                    //单旋(三代节点为斜线)+变色
-                    if (parent->right == node)
-                    {
-                        leftRotate(root,parent);
-                        rightRotate(root,gparent);
-                        rb_set_black(node);
-                        rb_set_red(gparent);
-                    }
-                    else//双旋(三代节点为折线)+变色
-                    {
-                        rightRotate(root,gparent);
-                        rb_set_black(parent);
-                        rb_set_red(gparent);
-                    }
-                }
             }
         }
-        else//若“z的父节点”是“z的祖父节点的右孩子”
+        else//若父节点是祖父节点的右孩子,将上面的操作中“rightRotate”和“leftRotate”交换位置，然后依次执行。
         {
             // Case 1条件：叔叔节点是红色
+            RBTNode<T> *uncle = gparent->left;
+            if (uncle && rb_is_red(uncle))
             {
-                RBTNode<T> *uncle = gparent->left;
-                if (uncle && rb_is_red(uncle)) {
-                    rb_set_black(uncle);
+                rb_set_black(parent); //  (01) 将“父节点”设为黑色。
+                rb_set_black(uncle);  //  (02) 将“叔叔节点”设为黑色。
+                rb_set_red(gparent);  //  (03) 将“祖父节点”设为“红色”。
+                node = gparent;       //  (04) 将“祖父节点”设为“当前节点”(红色节点)
+            }else //红黑树特性,空节点或者黑色的非空节点都为黑色节点(叔叔是黑色)
+            {
+                if(0)   //实现方法1  算法导论
+                {
+                    // Case 2条件：叔叔是黑色，且当前节点是左孩子
+                    if (parent->left == node)
+                    {
+                        RBTNode<T> *tmp;
+                        rightRotate(root, parent);
+                        tmp = parent;
+                        parent = node;
+                        node = tmp;
+                    }
+
+                    // Case 3条件：叔叔是黑色，且当前节点是右孩子。
                     rb_set_black(parent);
                     rb_set_red(gparent);
-                    node = gparent;
-                    continue;
+                    leftRotate(root, gparent);
+                }
+
+                if(1) //实现方法2 java jdk TreeMap(fixAfterInsertion)
+                {
+                    if (parent->left == node)
+                    {
+                        node = parent;
+                        rightRotate(root,node);
+                    }
+                    rb_set_black(rb_parent(node));
+                    rb_set_red(rb_parent(rb_parent(node)));
+                    leftRotate(root, rb_parent(rb_parent(node)));
                 }
             }
-
-            // Case 2条件：叔叔是黑色，且当前节点是左孩子
-            if (parent->left == node) {
-                RBTNode<T> *tmp;
-                rightRotate(root, parent);
-                tmp = parent;
-                parent = node;
-                node = tmp;
-            }
-
-            // Case 3条件：叔叔是黑色，且当前节点是右孩子。
-            rb_set_black(parent);
-            rb_set_red(gparent);
-            leftRotate(root, gparent);
         }
     }
 
@@ -754,7 +758,8 @@ void RBTree<T>::remove(RBTNode<T> *&root, RBTNode<T> *node)
     RBTColor color;
 
     // 被删除节点的"左右孩子都不为空"的情况。
-    if ((node->left != NULL) && (node->right != NULL)) {
+    if ((node->left != NULL) && (node->right != NULL))
+    {
         // 被删节点的后继节点。(称为"取代节点")
         // 用它来取代"被删节点"的位置，然后再将"被删节点"去掉。
         RBTNode<T> *replace = node;
