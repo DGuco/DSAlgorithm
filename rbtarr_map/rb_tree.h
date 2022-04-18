@@ -363,11 +363,11 @@ RBTNode<T> *RBTree<T>::successor(RBTNode<T> *x)
     // (01) x是"一个左孩子"，则"x的后继结点"为 "它的父结点"。
     // (02) x是"一个右孩子"，则查找"x的最低的父结点，并且该父结点要具有左孩子"，找到的这个"最低的父结点"就是"x的后继结点"。
     RBTNode<T> *y = x->parent;
-    while ((y != NULL) && (x == y->right)) {
+    while ((y != NULL) && (x == y->right))
+    {
         x = y;
         y = y->parent;
     }
-
     return y;
 }
 
@@ -672,10 +672,13 @@ void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node, RBTNode<T> *par
 {
     RBTNode<T> *other;
 
-    while ((!node || rb_is_black(node)) && node != root) {
-        if (parent->left == node) {
+    while ((!node || rb_is_black(node)) && node != root)
+    {
+        if (parent->left == node)
+        {
             other = parent->right;
-            if (rb_is_red(other)) {
+            if (rb_is_red(other))
+            {
                 // Case 1: x的兄弟w是红色的
                 rb_set_black(other);
                 rb_set_red(parent);
@@ -683,14 +686,16 @@ void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node, RBTNode<T> *par
                 other = parent->right;
             }
             if ((!other->left || rb_is_black(other->left)) &&
-                (!other->right || rb_is_black(other->right))) {
+                (!other->right || rb_is_black(other->right)))
+            {
                 // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
                 rb_set_red(other);
                 node = parent;
                 parent = rb_parent(node);
             }
             else {
-                if (!other->right || rb_is_black(other->right)) {
+                if (!other->right || rb_is_black(other->right))
+                {
                     // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
                     rb_set_black(other->left);
                     rb_set_red(other);
@@ -703,12 +708,12 @@ void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node, RBTNode<T> *par
                 rb_set_black(other->right);
                 leftRotate(root, parent);
                 node = root;
-                break;
             }
         }
         else {
             other = parent->left;
-            if (rb_is_red(other)) {
+            if (rb_is_red(other))
+            {
                 // Case 1: x的兄弟w是红色的
                 rb_set_black(other);
                 rb_set_red(parent);
@@ -716,14 +721,16 @@ void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node, RBTNode<T> *par
                 other = parent->left;
             }
             if ((!other->left || rb_is_black(other->left)) &&
-                (!other->right || rb_is_black(other->right))) {
+                (!other->right || rb_is_black(other->right)))
+            {
                 // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
                 rb_set_red(other);
                 node = parent;
                 parent = rb_parent(node);
             }
             else {
-                if (!other->left || rb_is_black(other->left)) {
+                if (!other->left || rb_is_black(other->left))
+                {
                     // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
                     rb_set_black(other->right);
                     rb_set_red(other);
@@ -736,7 +743,6 @@ void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node, RBTNode<T> *par
                 rb_set_black(other->left);
                 rightRotate(root, parent);
                 node = root;
-                break;
             }
         }
     }
@@ -762,15 +768,11 @@ void RBTree<T>::remove(RBTNode<T> *&root, RBTNode<T> *node)
     {
         // 被删节点的后继节点。(称为"取代节点")
         // 用它来取代"被删节点"的位置，然后再将"被删节点"去掉。
-        RBTNode<T> *replace = node;
+        RBTNode<T> *replace = successor(node);
 
-        // 获取后继节点
-        replace = replace->right;
-        while (replace->left != NULL)
-            replace = replace->left;
-
-        // "node节点"不是根节点(只有根节点不存在父节点)
-        if (rb_parent(node)) {
+        // "node节点"不是根节点d(只有根节点不存在父节点)
+        if (rb_parent(node))
+        {
             if (rb_parent(node)->left == node)
                 rb_parent(node)->left = replace;
             else
@@ -788,10 +790,12 @@ void RBTree<T>::remove(RBTNode<T> *&root, RBTNode<T> *node)
         color = rb_color(replace);
 
         // "被删除节点"是"它的后继节点的父节点"
-        if (parent == node) {
+        if (parent == node)
+        {
             parent = replace;
         }
-        else {
+        else
+        {
             // child不为空
             if (child)
                 rb_set_parent(child, parent);

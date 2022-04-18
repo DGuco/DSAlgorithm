@@ -7,6 +7,7 @@
  * https://blog.csdn.net/m0_49374492/article/details/119045823
  * https://zhuanlan.zhihu.com/p/31758048
  * https://www.cnblogs.com/skywang12345/p/3624291.html
+ * https://www.cs.usfca.edu/~galles/visualization/RedBlack.html
  * @return
  */
 int main()
