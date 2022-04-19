@@ -1,4 +1,5 @@
 #include <iostream>
+#include <list>
 #include "rbthash_map.h"
 #include "rb_tree.h"
 
@@ -12,21 +13,30 @@
  */
 int main()
 {
+    RBTNode<int,unsigned int> nodeArr[10];
+    for(int index = 0;index < 10;index++)
+    {
+        nodeArr->set_cur(index + 1);
+    }
     int a[]= {10, 40, 30, 60, 90, 70, 20, 50, 80};
-    int check_insert=0;    // "插入"动作的检测开关(0，关闭；1，打开)
+    int check_insert=1;    // "插入"动作的检测开关(0，关闭；1，打开)
     int check_remove=1;    // "删除"动作的检测开关(0，关闭；1，打开)
     int i;
     int ilen = (sizeof(a)) / (sizeof(a[0])) ;
-    RBTree<int>* tree=new RBTree<int>();
+    RBTree<int,unsigned int,10>* tree = new RBTree<int,unsigned int,10>(nodeArr);
 
     cout << "== 原始数据: ";
     for(i=0; i<ilen; i++)
+    {
         cout << a[i] <<" ";
+        nodeArr[i].set_cur(i + 1);
+        nodeArr[i].set_key(a[i]);
+    }
     cout << endl;
 
     for(i=0; i<ilen; i++)
     {
-        tree->insert(a[i]);
+        tree->insert(&nodeArr[i]);
         // 设置check_insert=1,测试"添加函数"
         if(check_insert)
         {
@@ -43,13 +53,17 @@ int main()
     }
 
     cout << "== 前序遍历: ";
-    tree->preOrder();
+    std::list<RBTNode<int>*> resList;
+    resList.clear();
+    tree->preOrder(resList);
 
+    resList.clear();
     cout << "\n== 中序遍历: ";
-    tree->inOrder();
+    tree->inOrder(resList);
 
+    resList.clear();
     cout << "\n== 后序遍历: ";
-    tree->postOrder();
+    tree->postOrder(resList);
     cout << endl;
 
     cout << "== RBTree ok:  " << tree->isRBTree() << endl;
@@ -75,9 +89,6 @@ int main()
             cout << endl;
         }
     }
-
-    // 销毁红黑树
-    tree->destroy();
 
     return 0;
     std::cout << "Hello, World!" << std::endl;

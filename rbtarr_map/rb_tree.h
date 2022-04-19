@@ -10,199 +10,212 @@
 
 #include <iomanip>
 #include <iostream>
+#include <list>
 using namespace std;
 
 #define RB_TREE_JAVA 1
+#define DEBUG_RB_TREE 1
 
 enum RBTColor
 {
-    RB_RED = 0X0,
-    RB_BLACK = 0X1,
+    RB_NONE = 0,
+    RB_RED = 1,
+    RB_BLACK = 2,
 };
 
-template<class T>
-class RBTNode
+/**
+ *单个节点类
+* */
+#pragma pack(1)
+template<typename T,typename INDEX_TYPE = unsigned int>
+struct RBTNode
 {
 public:
-    RBTColor color;    // 颜色
-    T key;             // 关键字(键值)
-    RBTNode *left;     // 左孩子
-    RBTNode *right;    // 右孩子
-    RBTNode *parent;   // 父结点
+    typedef T &reference;
+    typedef T *pointer;
+    RBTNode()
+    {
+        clear_rb();
+    }
+
+    ~RBTNode()
+    {
+        clear_rb();
+    }
+
+    void clear_rb()
+    {
+        parent_ = 0;
+        left_ = 0;
+        right_ = 0;
+        color_ = RB_NONE;
+        memset(data_, 0, sizeof(T));
+    }
+    inline void set_cur(INDEX_TYPE value)  { cur_ = value;}
+    inline INDEX_TYPE  get_cur()           { return cur_;}
+
+    inline void set_prev(INDEX_TYPE value)  { left_ = value;}
+    inline INDEX_TYPE  get_prev()           { return left_;}
+
+    inline void set_next(INDEX_TYPE value)  { right_ = value;}
+    inline INDEX_TYPE  get_next()           { return right_;}
+
+    inline void set_parent(INDEX_TYPE value)  { parent_ = value;}
+    inline INDEX_TYPE  get_parent()           { return parent_;}
+
+    inline void set_left(INDEX_TYPE value)  { left_ = value;}
+    inline INDEX_TYPE  get_left()           { return left_;}
+
+    inline void set_right(INDEX_TYPE value)  { right_ = value;}
+    inline INDEX_TYPE  get_right()           { return right_;}
+
+    inline void set_color(RBTColor value)    { color_ = value;}
+    inline RBTColor  get_color()             { return (RBTColor)color_;}
+
+    void set_key(T value)            { key = value;}
+    T     get_key()                  { return  key;}
+
+    void dis_from_list()
+    {
+        set_next(0);
+        set_prev(0);
+    }
+
+    reference value()
+    {
+        return *(reinterpret_cast<pointer>(data_));
+    }
+
+    char* data()
+    {
+        return data_;
+    }
+
+
 public:
-    RBTNode(T value, RBTColor c, RBTNode *p, RBTNode *l, RBTNode *r)
+    RBTNode(T value, RBTColor c, INDEX_TYPE p, INDEX_TYPE l, INDEX_TYPE r)
         :
-        key(value), color(c), parent(), left(l), right(r)
+        key(value), color_(c), parent_(), left_(l), right_(r)
     {}
-
-    static inline RBTNode<T>* parentOf(RBTNode<T>* node)
-    {
-        return  node == NULL ? NULL : node->parent;
-    }
-
-    static inline RBTColor colorOf(RBTNode<T>* node)
-    {
-        return node == NULL ? RB_BLACK : node->color;
-    }
-
-    static inline bool isRed(RBTNode<T>* node)
-    {
-        return colorOf(node) == RB_RED;
-    }
-
-    static inline bool isBlack(RBTNode<T>* node)
-    {
-        return colorOf(node) == RB_BLACK;
-    }
-
-    static inline void setColor(RBTNode<T>* node,RBTColor color)
-    {
-        if(node != NULL) node->color = color;
-    }
-
-    static inline void setRed(RBTNode<T>* node)
-    {
-        setColor(node,RB_RED);
-    }
-
-    static inline void setBlack(RBTNode<T>* node)
-    {
-        setColor(node,RB_BLACK);
-    }
-
-    static inline RBTNode<T>* leftOf(RBTNode<T>* node)
-    {
-        return node == NULL ? NULL : node->left;
-    }
-
-    static inline RBTNode<T>* rightOf(RBTNode<T>* node)
-    {
-        return node == NULL ? NULL : node->right;
-    }
+private:
+    T                          key;                           // 关键字(键值)
+    char                       data_[sizeof(T)];              //真正存放对象信息的内存块 c++ placement new operator把对象new到指定的内存位置
+    INDEX_TYPE                 cur_;                          //当前节点在数组中的索引位置+1
+    INDEX_TYPE                 parent_;                       //父亲节点在数组中的索引位置+1
+    INDEX_TYPE                 left_;                         //左子节点在数组中的索引位置+1
+    INDEX_TYPE                 right_;                        //右子节点在数组中的索引位置+1
+    unsigned  char             color_;                        //节点color
 };
 
-#define rb_parentOf(node)              (RBTNode<T>::parentOf(node))
-#define rb_colorOf(node)               (RBTNode<T>::colorOf(node))
-#define rb_isRed(node)                 (RBTNode<T>::isRed(node))
-#define rb_isBlack(node)               (RBTNode<T>::isBlack(node))
-#define rb_setColor(node,color)        (RBTNode<T>::setColor(node,color))
-#define rb_setRed(node)                (RBTNode<T>::setRed(node))
-#define rb_setBlack(node)              (RBTNode<T>::setBlack(node))
-#define rb_leftOf(node)                (RBTNode<T>::leftOf(node))
-#define rb_rightOf(node)               (RBTNode<T>::rightOf(node))
-
-template<class T>
+template<typename T,typename INDEX_TYPE = unsigned int,std::size_t Cap_ = 0>
 class RBTree
 {
 public:
-    RBTree();
+    RBTree(RBTNode<T>  *pool);
     ~RBTree();
-
     bool isRBTree();
     // 前序遍历"红黑树"
-    void preOrder();
+    void preOrder(std::list<RBTNode<T>*>& resList);
     // 中序遍历"红黑树"
-    void inOrder();
+    void inOrder(std::list<RBTNode<T>*>& resList);
     // 后序遍历"红黑树"
-    void postOrder();
-
+    void postOrder(std::list<RBTNode<T>*>& resList);
     // (递归实现)查找"红黑树"中键值为key的节点
     RBTNode<T> *search(T key);
     // (非递归实现)查找"红黑树"中键值为key的节点
     RBTNode<T> *iterativeSearch(T key);
-
     // 查找最小结点：返回最小结点的键值。
     T minimum();
     // 查找最大结点：返回最大结点的键值。
     T maximum();
-
     // 找结点(x)的后继结点。即，查找"红黑树中数据值大于该结点"的"最小结点"。
     RBTNode<T> *successor(RBTNode<T> *x);
     // 找结点(x)的前驱结点。即，查找"红黑树中数据值小于该结点"的"最大结点"。
     RBTNode<T> *predecessor(RBTNode<T> *x);
-
-    // 将结点(key为节点键值)插入到红黑树中
-    void insert(T key);
-
+    // 插入函数
+    void insert(RBTNode<T> *node);
     // 删除结点(key为节点键值)
     void remove(T key);
-
-    // 销毁红黑树
-    void destroy();
-
     // 打印红黑树
     void print();
 private:
     bool isRBTree(RBTNode<T>* root, int blacknum, int count);
     // 前序遍历"红黑树"
-    void preOrder(RBTNode<T> *tree) const;
+    void preOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList) ;
     // 中序遍历"红黑树"
-    void inOrder(RBTNode<T> *tree) const;
+    void inOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList) ;
     // 后序遍历"红黑树"
-    void postOrder(RBTNode<T> *tree) const;
+    void postOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList) ;
 
     // (递归实现)查找"红黑树x"中键值为key的节点
-    RBTNode<T> *search(RBTNode<T> *x, T key) const;
+    RBTNode<T> *search(RBTNode<T> *x, T key);
     // (非递归实现)查找"红黑树x"中键值为key的节点
-    RBTNode<T> *iterativeSearch(RBTNode<T> *x, T key) const;
+    RBTNode<T> *iterativeSearch(RBTNode<T> *x, T key);
 
     // 查找最小结点：返回tree为根结点的红黑树的最小结点。
     RBTNode<T> *minimum(RBTNode<T> *tree);
     // 查找最大结点：返回tree为根结点的红黑树的最大结点。
     RBTNode<T> *maximum(RBTNode<T> *tree);
-
     // 左旋
-    void leftRotate(RBTNode<T> *&root, RBTNode<T> *x);
+    void leftRotate(RBTNode<T> *x);
     // 右旋
-    void rightRotate(RBTNode<T> *&root, RBTNode<T> *y);
-    // 插入函数
-    void insert(RBTNode<T> *&root, RBTNode<T> *node);
+    void rightRotate(RBTNode<T> *y);
     // 插入修正函数
-    void insertFixUp(RBTNode<T> *&root, RBTNode<T> *node);
+    void insertFixUp(RBTNode<T> *node);
     // 删除函数
-    void remove(RBTNode<T> *&root, RBTNode<T> *node);
+    void remove(RBTNode<T> *node);
     // 删除修正函数
-    void removeFixUp(RBTNode<T> *&root, RBTNode<T> *node);
+    void removeFixUp(RBTNode<T> *node);
     // 删除修正函数
-    void removeFixUp(RBTNode<T> *&root, RBTNode<T> *node,RBTNode<T> *parent);
-    // 销毁红黑树
-    void destroy(RBTNode<T> *&tree);
+    void removeFixUp(RBTNode<T> *node,RBTNode<T> *parent);
     // 打印红黑树
     void print(RBTNode<T> *tree, T key, int direction);
-
+    inline RBTNode<T>* getNode(INDEX_TYPE index);
+    inline RBTNode<T> *parentOf(RBTNode<T> *node);
+    inline void *setParent(RBTNode<T> *node,RBTNode<T> *parent);
+    inline RBTColor colorOf(RBTNode<T> *node);
+    inline bool isRed(RBTNode<T> *node);
+    inline bool isBlack(RBTNode<T> *node);
+    inline void setColor(RBTNode<T> *node,RBTColor color);
+    inline void setRed(RBTNode<T> *node);
+    inline void setBlack(RBTNode<T> *node);
+    inline RBTNode<T> *leftOf(RBTNode<T> *node);
+    inline void *setLeft(RBTNode<T> *node,RBTNode<T> *left);
+    inline RBTNode<T> *rightOf(RBTNode<T> *node);
+    inline void setRight(RBTNode<T> *node,RBTNode<T> *right);
+    inline INDEX_TYPE curOf(RBTNode<T> *node);
 private:
-    RBTNode<T> *mRoot;    // 根结点
+    RBTNode<T>  *m_Pool;    //
+    INDEX_TYPE   m_Root;
 };
 
 /*
  * 构造函数
  */
-template<class T>
-RBTree<T>::RBTree()
-    :mRoot(NULL)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTree<T,INDEX_TYPE,Cap_>::RBTree(RBTNode<T>  *pool)
+    :m_Pool(pool),m_Root(0)
 {
-    mRoot = NULL;
 }
 
 /*
  * 析构函数
  */
-template<class T>
-RBTree<T>::~RBTree()
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTree<T,INDEX_TYPE,Cap_>::~RBTree()
 {
-    destroy();
 }
 
-template<class T>
-bool RBTree<T>::isRBTree()
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+bool RBTree<T,INDEX_TYPE,Cap_>::isRBTree()
 {
     //空树
-    if (mRoot == nullptr)
+    if (getNode(m_Root) == nullptr)
     {
         return true;
     }
     //根节点为黑色
-    if (rb_colorOf(mRoot)  == RB_RED)
+    if (colorOf(getNode(m_Root))  == RB_RED)
     {
         cout << "根节点为红色" << endl;
         return false;
@@ -210,20 +223,20 @@ bool RBTree<T>::isRBTree()
     //黑色结点数量各路径上相同
     //先走一条得到基准值
     int Blacknum = 0;
-    RBTNode<T>* cur = mRoot;
+    RBTNode<T>* cur = getNode(m_Root);
     while (cur)
     {
-        if (rb_colorOf(cur) == RB_BLACK)
+        if (colorOf(cur) == RB_BLACK)
             Blacknum++;
-        cur = cur->left;
+        cur = leftOf(cur);
     }
     //检查子树
     int i = 0;
-    return isRBTree(mRoot, Blacknum, i);
+    return isRBTree(getNode(m_Root), Blacknum, i);
 }
 
-template<class T>
-bool RBTree<T>::isRBTree(RBTNode<T>* root, int blacknum, int count)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+bool RBTree<T,INDEX_TYPE,Cap_>::isRBTree(RBTNode<T>* root, int blacknum, int count)
 {
     //递归到空节点
     if (root == nullptr)
@@ -234,101 +247,114 @@ bool RBTree<T>::isRBTree(RBTNode<T>* root, int blacknum, int count)
         return false;
     }
     //子节点为红则检查父节点是否为红（通过父节点检查子节点会遇到空节点）
-    if (rb_colorOf(root) == RB_RED && rb_colorOf(rb_parentOf(root)) == RB_RED)
+    if (colorOf(root) == RB_RED && colorOf(parentOf(root)) == RB_RED)
     {
         cout << "存在连续红色节点" << endl;
         return false;
     }
     //计数黑结点
-    if (rb_colorOf(root) == RB_BLACK)
+    if (colorOf(root) == RB_BLACK)
         count++;
     //递归左右子树
-    return isRBTree(root->left, blacknum, count) && isRBTree(root->right, blacknum, count);
+    return isRBTree(leftOf(root), blacknum, count) && isRBTree(rightOf(root), blacknum, count);
 }
 
 /*
  * 前序遍历"红黑树"
  */
-template<class T>
-void RBTree<T>::preOrder(RBTNode<T> *tree) const
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::preOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList)
 {
     if (tree != NULL) {
-        cout << tree->key << " ";
-        preOrder(tree->left);
-        preOrder(tree->right);
+        if(DEBUG_RB_TREE)
+        {
+            cout << tree->get_key() << " ";
+        }
+        resList.push_back(tree);
+        preOrder(leftOf(tree),resList);
+        preOrder(rightOf(tree),resList);
     }
 }
 
-template<class T>
-void RBTree<T>::preOrder()
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::preOrder(std::list<RBTNode<T>*>& resList)
 {
-    preOrder(mRoot);
+    preOrder(getNode(m_Root),resList);
 }
 
 /*
  * 中序遍历"红黑树"
  */
-template<class T>
-void RBTree<T>::inOrder(RBTNode<T> *tree) const
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::inOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList)
 {
     if (tree != NULL) {
-        inOrder(tree->left);
-        cout << tree->key << " ";
-        inOrder(tree->right);
+        inOrder(leftOf(tree),resList);
+        if(DEBUG_RB_TREE)
+        {
+            cout << tree->get_key() << " ";
+        }
+        resList.push_back(tree);
+        inOrder(rightOf(tree),resList);
     }
 }
 
-template<class T>
-void RBTree<T>::inOrder()
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::inOrder(std::list<RBTNode<T>*>& resList)
 {
-    inOrder(mRoot);
+    inOrder(getNode(m_Root),resList);
 }
 
 /*
  * 后序遍历"红黑树"
  */
-template<class T>
-void RBTree<T>::postOrder(RBTNode<T> *tree) const
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::postOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList)
 {
-    if (tree != NULL) {
-        postOrder(tree->left);
-        postOrder(tree->right);
-        cout << tree->key << " ";
+    if (tree != NULL)
+    {
+        postOrder(leftOf(tree),resList);
+        postOrder(rightOf(tree),resList);
+        if(DEBUG_RB_TREE)
+        {
+            cout << tree->get_key() << " ";
+        }
+        resList.push_back(tree);
     }
 }
 
-template<class T>
-void RBTree<T>::postOrder()
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::postOrder(std::list<RBTNode<T>*>& resList)
 {
-    postOrder(mRoot);
+    postOrder(getNode(m_Root),resList);
 }
 
 /*
  * (递归实现)查找"红黑树x"中键值为key的节点
  */
-template<class T>
-RBTNode<T> *RBTree<T>::search(RBTNode<T> *x, T key) const
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::search(RBTNode<T> *x, T key)
 {
-    if (x == NULL || x->key == key)
+    if (x == NULL || x->get_key() == key)
         return x;
 
-    if (key < x->key)
-        return search(x->left, key);
+    if (key < x->get_key())
+        return search(leftOf(x), key);
     else
-        return search(x->right, key);
+        return search(rightOf(x), key);
 }
 
-template<class T>
-RBTNode<T> *RBTree<T>::search(T key)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::search(T key)
 {
-    search(mRoot, key);
+    search(getNode(m_Root), key);
 }
 
 /*
  * (非递归实现)查找"红黑树x"中键值为key的节点
  */
-template<class T>
-RBTNode<T> *RBTree<T>::iterativeSearch(RBTNode<T> *x, T key) const
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::iterativeSearch(RBTNode<T> *x, T key)
 {
     while ((x != NULL) && (x->key != key)) {
         if (key < x->key)
@@ -340,32 +366,32 @@ RBTNode<T> *RBTree<T>::iterativeSearch(RBTNode<T> *x, T key) const
     return x;
 }
 
-template<class T>
-RBTNode<T> *RBTree<T>::iterativeSearch(T key)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::iterativeSearch(T key)
 {
-    iterativeSearch(mRoot, key);
+    iterativeSearch(getNode(m_Root), key);
 }
 
 /*
  * 查找最小结点：返回tree为根结点的红黑树的最小结点。
  */
-template<class T>
-RBTNode<T> *RBTree<T>::minimum(RBTNode<T> *tree)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::minimum(RBTNode<T> *tree)
 {
     if (tree == NULL)
         return NULL;
 
-    while (tree->left != NULL)
-        tree = tree->left;
+    while (leftOf(tree) != NULL)
+        tree = leftOf(tree);
     return tree;
 }
 
-template<class T>
-T RBTree<T>::minimum()
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+T RBTree<T,INDEX_TYPE,Cap_>::minimum()
 {
-    RBTNode<T> *p = minimum(mRoot);
+    RBTNode<T> *p = minimum(getNode(m_Root));
     if (p != NULL)
-        return p->key;
+        return p->get_key();
 
     return (T) NULL;
 }
@@ -373,23 +399,23 @@ T RBTree<T>::minimum()
 /*
  * 查找最大结点：返回tree为根结点的红黑树的最大结点。
  */
-template<class T>
-RBTNode<T> *RBTree<T>::maximum(RBTNode<T> *tree)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::maximum(RBTNode<T> *tree)
 {
     if (tree == NULL)
         return NULL;
 
-    while (tree->right != NULL)
-        tree = tree->right;
+    while (rightOf(tree) != NULL)
+        tree = rightOf(tree);
     return tree;
 }
 
-template<class T>
-T RBTree<T>::maximum()
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+T RBTree<T,INDEX_TYPE,Cap_>::maximum()
 {
-    RBTNode<T> *p = maximum(mRoot);
+    RBTNode<T> *p = maximum(getNode(m_Root));
     if (p != NULL)
-        return p->key;
+        return p->get_key();
 
     return (T) NULL;
 }
@@ -397,8 +423,8 @@ T RBTree<T>::maximum()
 /*
  * 找结点(x)的后继结点。即，查找"红黑树中数据值大于该结点"的"最小结点"。
  */
-template<class T>
-RBTNode<T> *RBTree<T>::successor(RBTNode<T> *x)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::successor(RBTNode<T> *x)
 {
     if(x == NULL)
     {
@@ -406,17 +432,17 @@ RBTNode<T> *RBTree<T>::successor(RBTNode<T> *x)
     }
 
     // 如果x存在右孩子，则"x的后继结点"为 "以其右孩子为根的子树的最小结点"。
-    if (x->right != NULL)
-        return minimum(x->right);
+    if (rightOf(x) != NULL)
+        return minimum(rightOf(x));
 
     // 如果x没有右孩子。则x有以下两种可能：
     // (01) x是"一个左孩子"，则"x的后继结点"为 "它的父结点"。
     // (02) x是"一个右孩子"，则查找"x的最低的父结点，并且该父结点要具有左孩子"，找到的这个"最低的父结点"就是"x的后继结点"。
-    RBTNode<T> *y = x->parent;
-    while ((y != NULL) && (x == y->right))
+    RBTNode<T> *y = parentOf(x);
+    while ((y != NULL) && (x == rightOf(y)))
     {
         x = y;
-        y = y->parent;
+        y = parentOf(y);
     }
     return y;
 }
@@ -424,8 +450,8 @@ RBTNode<T> *RBTree<T>::successor(RBTNode<T> *x)
 /*
  * 找结点(x)的前驱结点。即，查找"红黑树中数据值小于该结点"的"最大结点"。
  */
-template<class T>
-RBTNode<T> *RBTree<T>::predecessor(RBTNode<T> *x)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::predecessor(RBTNode<T> *x)
 {
     // 如果x存在左孩子，则"x的前驱结点"为 "以其左孩子为根的子树的最大结点"。
     if (x->left != NULL)
@@ -454,35 +480,35 @@ RBTNode<T> *RBTree<T>::predecessor(RBTNode<T> *x)
  *     /   \                       /  \
  *    ly   ry                     lx  ly
  */
-template<class T>
-void RBTree<T>::leftRotate(RBTNode<T> *&root, RBTNode<T> *x)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::leftRotate(RBTNode<T> *x)
 {
     // 设置x的右孩子为y
-    RBTNode<T> *y = x->right;
+    RBTNode<T> *y = rightOf(x);
 
     // 将 “y的左孩子” 设为 “x的右孩子”；
     // 如果y的左孩子非空，将 “x” 设为 “y的左孩子的父亲”
-    x->right = y->left;
-    if (y->left != NULL)
-        y->left->parent = x;
+    setRight(x, leftOf(y));
+    if (leftOf(y) != NULL)
+        setParent(leftOf(y),x);
 
     // 将 “x的父亲” 设为 “y的父亲”
-    y->parent = x->parent;
+    setParent(y, parentOf(x));
 
-    if (x->parent == NULL) {
-        root = y;            // 如果 “x的父亲” 是空节点，则将y设为根节点
+    if (parentOf(x) == NULL) {
+        m_Root = curOf(y);            // 如果 “x的父亲” 是空节点，则将y设为根节点
     }
     else {
-        if (x->parent->left == x)
-            x->parent->left = y;    // 如果 x是它父节点的左孩子，则将y设为“x的父节点的左孩子”
+        if (leftOf(parentOf(x)) == x)
+            setLeft(parentOf(x),y); //如果 x是它父节点的左孩子，则将y设为“x的父节点的左孩子”
         else
-            x->parent->right = y;    // 如果 x是它父节点的左孩子，则将y设为“x的父节点的左孩子”
+            setRight(parentOf(x),y); // 如果 x是它父节点的右孩子，则将y设为“x的父节点的右孩子”
     }
 
     // 将 “x” 设为 “y的左孩子”
-    y->left = x;
+    setLeft(y,x);
     // 将 “x的父节点” 设为 “y”
-    x->parent = y;
+    setParent(x,y);
 }
 
 /*
@@ -496,36 +522,35 @@ void RBTree<T>::leftRotate(RBTNode<T> *&root, RBTNode<T> *x)
  *       / \                                   / \                   #
  *      lx  rx                                rx  ry
  */
-template<class T>
-void RBTree<T>::rightRotate(RBTNode<T> *&root, RBTNode<T> *y)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::rightRotate(RBTNode<T> *y)
 {
     // 设置x是当前节点的左孩子。
-    RBTNode<T> *x = y->left;
+    RBTNode<T> *x = leftOf(y);
 
     // 将 “x的右孩子” 设为 “y的左孩子”；
     // 如果"x的右孩子"不为空的话，将 “y” 设为 “x的右孩子的父亲”
-    y->left = x->right;
-    if (x->right != NULL)
-        x->right->parent = y;
+    setLeft(y, rightOf(x));
+    if (rightOf(x) != NULL)
+        setParent(rightOf(x),y);
 
     // 将 “y的父亲” 设为 “x的父亲”
-    x->parent = y->parent;
+    setParent(x, parentOf(y));
 
-    if (y->parent == NULL) {
-        root = x;            // 如果 “y的父亲” 是空节点，则将x设为根节点
+    if (parentOf(y) == NULL) {
+        m_Root = curOf(x);            // 如果 “y的父亲” 是空节点，则将x设为根节点
     }
     else {
-        if (y == y->parent->right)
-            y->parent->right = x;    // 如果 y是它父节点的右孩子，则将x设为“y的父节点的右孩子”
+        if (y == rightOf(parentOf(y)))
+            setRight(parentOf(y),x);// 如果 y是它父节点的右孩子，则将x设为“y的父节点的右孩子”
         else
-            y->parent->left = x;    // (y是它父节点的左孩子) 将x设为“x的父节点的左孩子”
+            setLeft(parentOf(y),x); // (y是它父节点的左孩子) 将x设为“x的父节点的左孩子”
     }
 
     // 将 “y” 设为 “x的右孩子”
-    x->right = y;
-
+    setRight(x,y);
     // 将 “y的父节点” 设为 “x”
-    y->parent = x;
+    setParent(y,x);
 }
 
 /*
@@ -538,54 +563,54 @@ void RBTree<T>::rightRotate(RBTNode<T> *&root, RBTNode<T> *y)
  *     root 红黑树的根
  *     node 插入的结点    对应《算法导论》中的z
  */
-template<class T>
-void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::insertFixUp(RBTNode<T> *node)
 {
     RBTNode<T> *parent, *gparent;
 
     // 若父节点存在，并且父节点的颜色是红色,根节点是黑色(被插入节点是一定存在非空祖父节点)
-    while ((parent = rb_parentOf(node)) && rb_isRed(parent))
+    while ((parent = parentOf(node)) && isRed(parent))
     {
-        gparent = rb_parentOf(parent);
+        gparent = parentOf(parent);
         //若父节点是祖父节点的左孩子
-        if (parent == rb_leftOf(gparent))
+        if (parent == leftOf(gparent))
         {
             // Case 1：叔叔节点是红色
-            RBTNode<T> *uncle = gparent->right;
-            if (rb_isRed(uncle))
+            RBTNode<T> *uncle = rightOf(gparent);
+            if (isRed(uncle))
             {
-                rb_setBlack(parent);//  (01) 将“父节点”设为黑色。
-                rb_setBlack(uncle); //  (02) 将“叔叔节点”设为黑色。
-                rb_setRed(gparent); //  (03) 将“祖父节点”设为“红色”。
+                setBlack(parent);//  (01) 将“父节点”设为黑色。
+                setBlack(uncle); //  (02) 将“叔叔节点”设为黑色。
+                setRed(gparent); //  (03) 将“祖父节点”设为“红色”。
                 node = gparent;      //  (04) 将“祖父节点”设为“当前节点”(红色节点)
             }else  //红黑树特性,空节点或者黑色的非空节点都为黑色节点(叔叔是黑色)
             {
                 if(!RB_TREE_JAVA) //实现方法1  算法导论 https://www.cnblogs.com/skywang12345/p/3624291.html
                 {
                     // Case 2：叔叔是黑色，且当前节点是右孩子
-                    if (rb_rightOf(parent) == node)
+                    if (rightOf(parent) == node)
                     {
                         RBTNode<T> *tmp;
-                        leftRotate(root, parent);  // (01) 将“父节点”作为“新的当前节点”。 (02) 以“新的当前节点”为支点进行左旋。
+                        leftRotate(parent);  // (01) 将“父节点”作为“新的当前节点”。 (02) 以“新的当前节点”为支点进行左旋。
                         tmp = parent;
                         parent = node;
                         node = tmp;
                     }
                     // Case 3条件：叔叔是黑色，且当前节点是左孩子。
-                    rb_setBlack(parent);                        //(01) 将“父节点”设为“黑色”。
-                    rb_setRed(gparent);                         //(02) 将“祖父节点”设为“红色”。
-                    rightRotate(root, gparent);              //(03) 以“祖父节点”为支点进行右旋。
+                    setBlack(parent);                        //(01) 将“父节点”设为“黑色”。
+                    setRed(gparent);                         //(02) 将“祖父节点”设为“红色”。
+                    rightRotate(gparent);              //(03) 以“祖父节点”为支点进行右旋。
                 }else //实现方法2 java jdk TreeMap(fixAfterInsertion)
                 {
-                    if (rb_rightOf(parent) == node)
+                    if (rightOf(parent) == node)
                     {
                         node = parent;
-                        leftRotate(root,node);
+                        leftRotate(node);
                     }
                     //如意如果parent->right == node，这里的rb_parent(node)是对左旋之后的树进行操作，最终的结果和方法1是一样的
-                    rb_setBlack(rb_parentOf(node));
-                    rb_setRed(rb_parentOf(rb_parentOf(node)));
-                    rightRotate(root,rb_parentOf(rb_parentOf(node)));
+                    setBlack(parentOf(node));
+                    setRed(parentOf(parentOf(node)));
+                    rightRotate(parentOf(parentOf(node)));
                 }
 
             }
@@ -593,48 +618,48 @@ void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
         else//若父节点是祖父节点的右孩子,将上面的操作中“rightRotate”和“leftRotate”交换位置，然后依次执行。
         {
             // Case 1条件：叔叔节点是红色
-            RBTNode<T> *uncle = gparent->left;
-            if (rb_isRed(uncle))
+            RBTNode<T> *uncle = leftOf(gparent);
+            if (isRed(uncle))
             {
-                rb_setBlack(parent); //  (01) 将“父节点”设为黑色。
-                rb_setBlack(uncle);  //  (02) 将“叔叔节点”设为黑色。
-                rb_setRed(gparent);  //  (03) 将“祖父节点”设为“红色”。
+                setBlack(parent); //  (01) 将“父节点”设为黑色。
+                setBlack(uncle);  //  (02) 将“叔叔节点”设为黑色。
+                setRed(gparent);  //  (03) 将“祖父节点”设为“红色”。
                 node = gparent;       //  (04) 将“祖父节点”设为“当前节点”(红色节点)
             }else //红黑树特性,空节点或者黑色的非空节点都为黑色节点(叔叔是黑色)
             {
                 if(!RB_TREE_JAVA)   //实现方法1  算法导论 https://www.cnblogs.com/skywang12345/p/3624291.html
                 {
                     // Case 2条件：叔叔是黑色，且当前节点是左孩子
-                    if (rb_leftOf(parent) == node)
+                    if (leftOf(parent) == node)
                     {
                         RBTNode<T> *tmp;
-                        rightRotate(root, parent);
+                        rightRotate(parent);
                         tmp = parent;
                         parent = node;
                         node = tmp;
                     }
 
                     // Case 3条件：叔叔是黑色，且当前节点是右孩子。
-                    rb_setBlack(parent);
-                    rb_setRed(gparent);
-                    leftRotate(root, gparent);
+                    setBlack(parent);
+                    setRed(gparent);
+                    leftRotate(gparent);
                 }else //实现方法2 java jdk TreeMap(fixAfterInsertion)
                 {
-                    if (rb_leftOf(parent) == node)
+                    if (leftOf(parent) == node)
                     {
                         node = parent;
-                        rightRotate(root,node);
+                        rightRotate(node);
                     }
-                    rb_setBlack(rb_parentOf(node));
-                    rb_setRed(rb_parentOf(rb_parentOf(node)));
-                    leftRotate(root, rb_parentOf(rb_parentOf(node)));
+                    setBlack(parentOf(node));
+                    setRed(parentOf(parentOf(node)));
+                    leftRotate(parentOf(parentOf(node)));
                 }
             }
         }
     }
 
     // 将根节点设为黑色
-    rb_setBlack(root);
+    setBlack(getNode(m_Root));
 }
 
 /*
@@ -644,11 +669,11 @@ void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
  *     root 红黑树的根结点
  *     node 插入的结点        // 对应《算法导论》中的node
  */
-template<class T>
-void RBTree<T>::insert(RBTNode<T> *&root, RBTNode<T> *node)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::insert(RBTNode<T> *node)
 {
     RBTNode<T> *parent_node = NULL;
-    RBTNode<T> *tmp_node = root;
+    RBTNode<T> *tmp_node = getNode(m_Root);
 
     //将红黑树当作一颗二叉查找树，将节点添加到二叉查找树中。
     {
@@ -657,50 +682,31 @@ void RBTree<T>::insert(RBTNode<T> *&root, RBTNode<T> *node)
         {
             parent_node = tmp_node;
             //新节点比当前节点key小，往左子树开始找
-            if (node->key < tmp_node->key)
-                tmp_node = tmp_node->left;
+            if (node->get_key() < tmp_node->get_key())
+                tmp_node = leftOf(tmp_node);
             else //新节点比当前节点key大，往右子树开始找
-                tmp_node = tmp_node->right;
+                tmp_node = rightOf(tmp_node);
         }
 
         //把新节点父亲节点指向找到的节点
-        node->parent = parent_node;
+        setParent(node,parent_node);
         //如果有根节点
         if (parent_node != NULL)
         {
             //新节点比当前节点key小，插入父亲节点的左边
-            if (node->key < parent_node->key)
-                parent_node->left = node;
+            if (node->get_key() < parent_node->get_key())
+                setLeft(parent_node,node);
             else //新节点比当前节点key大，插入父亲节点的右边
-                parent_node->right = node;
+                setRight(parent_node,node);
         }
         else
-            root = node;
+            m_Root = curOf(node);
     }
 
     //设置节点的颜色为红色
-    rb_setRed(node);
+    setRed(node);
     //将它重新修正为一颗二叉查找树
-    insertFixUp(root, node);
-}
-
-/*
- * 将结点(key为节点键值)插入到红黑树中
- *
- * 参数说明：
- *     tree 红黑树的根结点
- *     key 插入结点的键值
- */
-template<class T>
-void RBTree<T>::insert(T key)
-{
-    RBTNode<T> *z = NULL;
-
-    // 如果新建结点失败，则返回。
-    if ((z = new RBTNode<T>(key, RB_BLACK, NULL, NULL, NULL)) == NULL)
-        return;
-
-    insert(mRoot, z);
+    insertFixUp(node);
 }
 
 /*
@@ -713,170 +719,170 @@ void RBTree<T>::insert(T key)
  *     root 红黑树的根
  *     node 待修正的节点
  */
-template<class T>
-void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::removeFixUp(RBTNode<T> *node)
 {
     RBTNode<T> *other;
 
-    while (node != root && rb_isBlack(node))
+    while (node != getNode(m_Root) && isBlack(node))
     {
-        if (rb_leftOf(rb_parentOf(node)) == node)
+        if (leftOf(parentOf(node)) == node)
         {
-            other = rb_rightOf(rb_parentOf(node));
-            if (rb_isRed(other))
+            other = rightOf(parentOf(node));
+            if (isRed(other))
             {
                 // Case 1: x的兄弟w是红色的
-                rb_setBlack(other);
-                rb_setRed(rb_parentOf(node));
-                leftRotate(root, rb_parentOf(node));
-                other = rb_rightOf(rb_parentOf(node));
+                setBlack(other);
+                setRed(parentOf(node));
+                leftRotate(parentOf(node));
+                other = rightOf(parentOf(node));
             }
-            if (rb_isBlack(rb_leftOf(other)) && rb_isBlack(rb_rightOf(other)))
+            if (isBlack(leftOf(other)) && isBlack(rightOf(other)))
             {
                 // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
-                rb_setRed(other);
-                node = rb_parentOf(node);
+                setRed(other);
+                node = parentOf(node);
             }
             else {
-                if (rb_isBlack(rb_rightOf(other)))
+                if (isBlack(rightOf(other)))
                 {
                     // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
-                    rb_setBlack(rb_leftOf(other));
-                    rb_setRed(other);
-                    rightRotate(root, other);
-                    other = rb_rightOf(rb_parentOf(node));
+                    setBlack(leftOf(other));
+                    setRed(other);
+                    rightRotate(other);
+                    other = rightOf(parentOf(node));
                 }
                 // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
-                rb_setColor(other, rb_colorOf(rb_parentOf(node)));
-                rb_setBlack(rb_parentOf(node));
-                rb_setBlack(rb_rightOf(other));
-                leftRotate(root, rb_parentOf(node));
-                node = root;
+                setColor(other, colorOf(parentOf(node)));
+                setBlack(parentOf(node));
+                setBlack(rightOf(other));
+                leftRotate(parentOf(node));
+                node = getNode(m_Root);
             }
         }
         else {
-            other = rb_leftOf(rb_parentOf(node));
-            if (rb_isRed(other))
+            other = leftOf(parentOf(node));
+            if (isRed(other))
             {
                 // Case 1: x的兄弟w是红色的
-                rb_setBlack(other);
-                rb_setRed(rb_parentOf(node));
-                rightRotate(root, rb_parentOf(node));
-                other = rb_leftOf(rb_parentOf(node));
+                setBlack(other);
+                setRed(parentOf(node));
+                rightRotate(parentOf(node));
+                other = leftOf(parentOf(node));
             }
-            if (rb_isBlack(rb_leftOf(other)) && rb_isBlack(rb_rightOf(other)))
+            if (isBlack(leftOf(other)) && isBlack(rightOf(other)))
             {
                 // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
-                rb_setRed(other);
-                node = rb_parentOf(node);
+                setRed(other);
+                node = parentOf(node);
             }
             else {
-                if (rb_isBlack(rb_leftOf(other)))
+                if (isBlack(leftOf(other)))
                 {
                     // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
-                    rb_setBlack(rb_rightOf(other));
-                    rb_setRed(other);
-                    leftRotate(root, other);
-                    other = rb_leftOf(rb_parentOf(other));
+                    setBlack(rightOf(other));
+                    setRed(other);
+                    leftRotate(other);
+                    other = leftOf(parentOf(other));
                 }
                 // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
-                rb_setColor(other, rb_colorOf(rb_parentOf(node)));
-                rb_setBlack(rb_parentOf(node));
-                rb_setBlack(rb_leftOf(other));
-                rightRotate(root, rb_parentOf(node));
-                node = root;
+                setColor(other, colorOf(parentOf(node)));
+                setBlack(parentOf(node));
+                setBlack(leftOf(other));
+                rightRotate(parentOf(node));
+                node = getNode(m_Root);
             }
         }
     }
     if (node)
-        rb_setBlack(node);
+        setBlack(node);
 }
 
 // 删除修正函数
-template<class T>
-void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node,RBTNode<T> *parent)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::removeFixUp(RBTNode<T> *node,RBTNode<T> *parent)
 {
     RBTNode<T> *other;
 
-    while ((!node || rb_isBlack(node)) && node != root)
+    while ((!node || isBlack(node)) && node != getNode(m_Root))
     {
-        if (rb_leftOf(parent) == node)
+        if (leftOf(parent) == node)
         {
-            other = parent->right;
-            if (rb_isRed(other))
+            other = rightOf(parent);
+            if (isRed(other))
             {
                 // Case 1: x的兄弟w是红色的
-                rb_setBlack(other);
-                rb_setRed(parent);
-                leftRotate(root, parent);
-                other = rb_rightOf(parent);
+                setBlack(other);
+                setRed(parent);
+                leftRotate(parent);
+                other = rightOf(parent);
             }
-            if (rb_isBlack(rb_leftOf(other)) && rb_isBlack(rb_rightOf(other)))
+            if (isBlack(leftOf(other)) && isBlack(rightOf(other)))
             {
                 // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
-                rb_setRed(other);
+                setRed(other);
                 node = parent;
-                parent = rb_parentOf(node);
+                parent = parentOf(node);
             }
             else
             {
-                if (rb_isBlack(rb_rightOf(other)))
+                if (isBlack(rightOf(other)))
                 {
                     // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
-                    rb_setBlack(other->left);
-                    rb_setRed(other);
-                    rightRotate(root, other);
-                    other = rb_rightOf(parent);
+                    setBlack(leftOf(other));
+                    setRed(other);
+                    rightRotate(other);
+                    other = rightOf(parent);
                 }
                 // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
-                rb_setColor(other, rb_colorOf(parent));
-                rb_setBlack(parent);
-                rb_setBlack(rb_rightOf(other));
-                leftRotate(root, parent);
-                node = root;
+                setColor(other, colorOf(parent));
+                setBlack(parent);
+                setBlack(rightOf(other));
+                leftRotate(parent);
+                node = getNode(m_Root);
                 break;
             }
         }
         else
         {
-            other = rb_leftOf(parent);
-            if (rb_isRed(other))
+            other = leftOf(parent);
+            if (isRed(other))
             {
                 // Case 1: x的兄弟w是红色的
-                rb_setBlack(other);
-                rb_setRed(parent);
-                rightRotate(root, parent);
-                other = rb_leftOf(parent);
+                setBlack(other);
+                setRed(parent);
+                rightRotate(parent);
+                other = leftOf(parent);
             }
-            if (rb_isBlack(rb_leftOf(other)) && rb_isBlack(rb_rightOf(other)))
+            if (isBlack(leftOf(other)) && isBlack(rightOf(other)))
             {
                 // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
-                rb_setRed(other);
+                setRed(other);
                 node = parent;
-                parent = rb_parentOf(node);
+                parent = parentOf(node);
             }
             else
             {
-                if (rb_isBlack(other->left))
+                if (isBlack(leftOf(other)))
                 {
                     // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
-                    rb_setBlack(other->right);
-                    rb_setRed(other);
-                    leftRotate(root, other);
-                    other = rb_leftOf(parent);
+                    setBlack(rightOf(other));
+                    setRed(other);
+                    leftRotate(other);
+                    other = leftOf(parent);
                 }
                 // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
-                rb_setColor(other, rb_colorOf(parent));
-                rb_setBlack(parent);
-                rb_setBlack(rb_leftOf(other));
-                rightRotate(root, parent);
-                node = root;
+                setColor(other, colorOf(parent));
+                setBlack(parent);
+                setBlack(leftOf(other));
+                rightRotate(parent);
+                node = getNode(m_Root);
                 break;
             }
         }
     }
     if (node)
-        rb_setBlack(node);
+        setBlack(node);
 }
 
 /*
@@ -886,8 +892,8 @@ void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node,RBTNode<T> *pare
  *     root 红黑树的根结点
  *     node 删除的结点
  */
-template<class T>
-void RBTree<T>::remove(RBTNode<T> *&root, RBTNode<T> *node)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::remove(RBTNode<T> *node)
 {
     if(!RB_TREE_JAVA)  //实现方法1  算法导论 https://www.cnblogs.com/skywang12345/p/3624291.html
     {
@@ -895,35 +901,35 @@ void RBTree<T>::remove(RBTNode<T> *&root, RBTNode<T> *node)
         RBTColor color;
 
         // 被删除节点的"左右孩子都不为空"的情况。
-        if ((rb_leftOf(node) != NULL) && (rb_rightOf(node) != NULL))
+        if ((leftOf(node) != NULL) && (rightOf(node) != NULL))
         {
             // 被删节点的后继节点。(称为"取代节点")
             // 用它来取代"被删节点"的位置，然后再将"被删节点"去掉。
             RBTNode<T> *replace = node;
 
             // 获取后继节点
-            replace = replace->right;
-            while (replace->left != NULL)
-                replace = replace->left;
+            replace = rightOf(replace);
+            while (leftOf(replace) != NULL)
+                replace = leftOf(replace);
 
             // "node节点"不是根节点d(只有根节点不存在父节点)
-            if (rb_parentOf(node))
+            if (parentOf(node))
             {
-                if (rb_parentOf(node)->left == node)
-                    rb_parentOf(node)->left = replace;
+                if (leftOf(parentOf(node)) == node)
+                    setLeft(parentOf(node),replace);
                 else
-                    rb_parentOf(node)->right = replace;
+                    setRight(parentOf(node),replace);
             }
             else
                 // "node节点"是根节点，更新根节点。
-                root = replace;
+                m_Root = curOf(replace);
 
             // child是"取代节点"的右孩子，也是需要"调整的节点"。
             // "取代节点"肯定不存在左孩子！因为它是一个后继节点。
-            child = replace->right;
-            parent = rb_parentOf(replace);
+            child = rightOf(replace);
+            parent = parentOf(replace);
             // 保存"取代节点"的颜色
-            color = rb_colorOf(replace);
+            color = colorOf(replace);
 
             // "被删除节点"是"它的后继节点的父节点"
             if (parent == node)
@@ -934,99 +940,98 @@ void RBTree<T>::remove(RBTNode<T> *&root, RBTNode<T> *node)
             {
                 // child不为空
                 if (child)
-                    child->parent = parent;
-                parent->left = child;
-
-                replace->right = node->right;
-                node->right->parent = replace;
+                    setParent(child,parent);
+                setLeft(parent,child);
+                setRight(replace, rightOf(node));
+                setParent(rightOf(node),replace);
             }
 
-            replace->parent = node->parent;
-            replace->color = node->color;
-            replace->left = node->left;
-            node->left->parent = replace;
-
+            setParent(replace, parentOf(node));
+            setColor(replace, colorOf(node));
+            setLeft(replace, leftOf(node));
+            setParent(leftOf(node),replace);
             if (color == RB_BLACK)
-                removeFixUp(root, child,parent);
+                removeFixUp(child,parent);
 
-            delete node;
+            node->clear_rb();
             return;
         }
 
-        if (node->left != NULL)
-            child = node->left;
+        if (leftOf(node) != NULL)
+            child = leftOf(node);
         else
-            child = node->right;
+            child = rightOf(node);
 
-        parent = node->parent;
+        parent = parentOf(node);
         // 保存"取代节点"的颜色
-        color = node->color;
+        color = colorOf(node);
 
         if (child)
-            child->parent = parent;
+            setParent(child,parent);
 
         // "node节点"不是根节点
         if (parent) {
-            if (parent->left == node)
-                parent->left = child;
+            if (leftOf(parent) == node)
+                setLeft(parent,child);
             else
-                parent->right = child;
+                setRight(parent,child);
         }
         else
-            root = child;
+            m_Root = curOf(child);
 
         if (color == RB_BLACK)
-            removeFixUp(root, child,parent);
-        delete node;
+            removeFixUp(child,parent);
+        node->clear_rb();
     }else //实现方法2 java jdk TreeMap(deleteEntry)
     {
         // 被删除节点的"左右孩子都不为空"的情况。
-        if ((node->left != NULL) && (node->right != NULL))
+        if ((leftOf(node) != NULL) && (rightOf(node) != NULL))
         {
             RBTNode<T>* succNode = successor(node);
-            node->key = succNode->key;
+            node->set_key(succNode->get_key());
             node = succNode;
         }
 
-        RBTNode<T>* replacement = (node->left != NULL) ? node->left : node->right;
+        RBTNode<T>* replacement = (leftOf(node) != NULL) ? leftOf(node) : rightOf(node);
         if(replacement != NULL)
         {
             // Link replacement to parent
-            replacement->parent = node->parent;
-            if (node->parent == NULL)
-                root = replacement;
-            else if (node == node->parent->left)
-                node->parent->left  = replacement;
+            setParent(replacement, parentOf(node));
+            if (parentOf(node) == NULL)
+                m_Root = curOf(replacement);
+            else if (node == leftOf(parentOf(node)))
+                setLeft(parentOf(node),replacement);
             else
-                node->parent->right = replacement;
+                setRight(parentOf(node),replacement);
 
             // Null out links so they are OK to use by fixAfterDeletion.
-            node->left = node->right = node->parent = NULL;
+            setLeft(node,NULL);
+            setRight(node,NULL);
+            setParent(node,NULL);
             // Fix replacement
-            if (node->color == RB_BLACK)
-                removeFixUp(root,replacement);
-            delete node;
-            node = NULL;
-        }else if(node->parent == NULL)
+            if (colorOf(node) == RB_BLACK)
+                removeFixUp(replacement);
+            node->clear_rb();
+        }else if(parentOf(node) == NULL)
         {
-            root = NULL;
+            m_Root = 0;
         }else
         {
-            if(node->color == RB_BLACK)
+            if(colorOf(node) == RB_BLACK)
             {
-                removeFixUp(root,node);
+                removeFixUp(node);
             }
 
-            if(node->parent != NULL)
+            if(parentOf(node) != NULL)
             {
-                if(node == node->parent->left)
+                if(node == leftOf(parentOf(node)))
                 {
-                    node->parent->left = NULL;
-                }else if(node == node->parent->right)
+                    setLeft(parentOf(node),NULL);
+                }else if(node == rightOf(parentOf(node)))
                 {
-                    node->parent->right = NULL;
+                    setRight(parentOf(node),NULL);
                 }
-                node->parent = NULL;
+                setParent(node,NULL);
             }
         }
     }
@@ -1038,39 +1043,39 @@ void RBTree<T>::remove(RBTNode<T> *&root, RBTNode<T> *node)
  * 参数说明：
  *     tree 红黑树的根结点
  */
-template<class T>
-void RBTree<T>::remove(T key)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::remove(T key)
 {
     RBTNode<T> *node;
 
     // 查找key对应的节点(node)，找到的话就删除该节点
-    if ((node = search(mRoot, key)) != NULL)
-        remove(mRoot, node);
+    if ((node = search(getNode(m_Root), key)) != NULL)
+        remove(node);
 }
 
 /*
  * 销毁红黑树
  */
-template<class T>
-void RBTree<T>::destroy(RBTNode<T> *&tree)
-{
-    if (tree == NULL)
-        return;
+//template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+//void RBTree<T,INDEX_TYPE,Cap_>::destroy(RBTNode<T> *&tree)
+//{
+//    if (tree == NULL)
+//        return;
+//
+//    if (tree->left != NULL)
+//        return destroy(tree->left);
+//    if (tree->right != NULL)
+//        return destroy(tree->right);
+//
+//    delete tree;
+//    tree = NULL;
+//}
 
-    if (tree->left != NULL)
-        return destroy(tree->left);
-    if (tree->right != NULL)
-        return destroy(tree->right);
-
-    delete tree;
-    tree = NULL;
-}
-
-template<class T>
-void RBTree<T>::destroy()
-{
-    destroy(mRoot);
-}
+//template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+//void RBTree<T,INDEX_TYPE,Cap_>::destroy()
+//{
+//    destroy(mRoot);
+//}
 
 /*
  * 打印"二叉查找树"
@@ -1080,26 +1085,121 @@ void RBTree<T>::destroy()
  *               -1，表示该节点是它的父结点的左孩子;
  *                1，表示该节点是它的父结点的右孩子。
  */
-template<class T>
-void RBTree<T>::print(RBTNode<T> *tree, T key, int direction)
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::print(RBTNode<T> *tree, T key, int direction)
 {
     if (tree != NULL) {
         if (direction == 0)    // tree是根节点
-            cout << setw(2) << tree->key << "(B) is root" << endl;
+            cout << setw(2) << tree->get_key() << "(B) is root" << endl;
         else                // tree是分支节点
-            cout << setw(2) << tree->key << ( rb_isRed(tree) ? "(R)" : "(B)") << " is " << setw(2) << key << "'s "
+            cout << setw(2) << tree->get_key() << ( isRed(tree) ? "(R)" : "(B)") << " is " << setw(2) << key << "'s "
                  << setw(12) << (direction == 1 ? "right child" : "left child") << endl;
 
-        print(tree->left, tree->key, -1);
-        print(tree->right, tree->key, 1);
+        print(leftOf(tree), tree->get_key(), -1);
+        print(rightOf(tree), tree->get_key(), 1);
     }
 }
 
-template<class T>
-void RBTree<T>::print()
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::getNode(INDEX_TYPE index)
 {
-    if (mRoot != NULL)
-        print(mRoot, mRoot->key, 0);
+    if(index > 0 && index <= Cap_)
+    {
+        return &m_Pool[index -1];
+    }
+    return NULL;
 }
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<T,INDEX_TYPE,Cap_>::print()
+{
+    if (getNode(m_Root) != NULL)
+        print(getNode(m_Root), getNode(m_Root)->get_key(), 0);
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::parentOf(RBTNode<T>* node)
+{
+    return  node == NULL ? NULL : getNode(node->get_parent());
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline void *RBTree<T,INDEX_TYPE,Cap_>::setParent(RBTNode<T> *node,RBTNode<T> *parent)
+{
+    if(node)
+        node->set_parent(parent == NULL ? 0 : parent->get_cur());
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline RBTColor RBTree<T,INDEX_TYPE,Cap_>::colorOf(RBTNode<T>* node)
+{
+    return RBTColor(node == NULL ? RB_BLACK : node->get_color());
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline bool RBTree<T,INDEX_TYPE,Cap_>::isRed(RBTNode<T>* node)
+{
+    return colorOf(node) == RB_RED;
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline bool RBTree<T,INDEX_TYPE,Cap_>::isBlack(RBTNode<T>* node)
+{
+    return colorOf(node) == RB_BLACK;
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<T,INDEX_TYPE,Cap_>::setColor(RBTNode<T>* node,RBTColor color)
+{
+    if(node != NULL) node->set_color(color);
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<T,INDEX_TYPE,Cap_>::setRed(RBTNode<T>* node)
+{
+    setColor(node,RB_RED);
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<T,INDEX_TYPE,Cap_>::setBlack(RBTNode<T>* node)
+{
+    setColor(node,RB_BLACK);
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::leftOf(RBTNode<T>* node)
+{
+    return node == NULL ? NULL : getNode(node->get_left());
+}
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline void *RBTree<T,INDEX_TYPE,Cap_>::setLeft(RBTNode<T> *node,RBTNode<T> *left)
+{
+    if(node)
+    {
+        node->set_left(left == NULL ? 0 : left->get_cur());
+    }
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::rightOf(RBTNode<T>* node)
+{
+    return node == NULL ? NULL : getNode(node->get_right());
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<T,INDEX_TYPE,Cap_>::setRight(RBTNode<T> *node, RBTNode<T> *right)
+{
+    if(node)
+    {
+        node->set_right(right == NULL ? 0 : right->get_cur());
+    }
+}
+
+template<typename T,typename INDEX_TYPE,std::size_t Cap_>
+inline INDEX_TYPE RBTree<T,INDEX_TYPE,Cap_>::curOf(RBTNode<T> *node)
+{
+    return node == NULL ? 0 : node->get_cur();
+}
+
 
 #endif //RBTARR_MAP_RB_TREE_H

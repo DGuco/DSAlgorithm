@@ -11,109 +11,10 @@
 #include <limits.h>
 #include <string.h>
 #include <map>
+#include "rb_tree.h"
 
 namespace rbt_hash
 {
-
-enum  RBColor
-{
-    RBColorNone = 0,
-    RBColorRED = 1,
-    RBColorBLACK = 2,
-};
-
-template<typename INDEX_TYPE>
-struct listNode
-{
-    INDEX_TYPE                 cur_;                         //当前节点在数组中的索引位置+1
-    INDEX_TYPE                 next_;                        //下一个节点在数组中的索引位置+1
-    INDEX_TYPE                 prev_;                        //前一个节点在数组中的索引位置+1
-    INDEX_TYPE                 _;                            //no used
-    unsigned  char             color_;                       //节点color
-};
-
-template<typename INDEX_TYPE>
-struct rbtNode
-{
-    INDEX_TYPE                 cur_;                          //当前节点在数组中的索引位置+1
-    INDEX_TYPE                 parent_;                       //父亲节点在数组中的索引位置+1
-    INDEX_TYPE                 left_;                         //左子节点在数组中的索引位置+1
-    INDEX_TYPE                 right_;                        //右子节点在数组中的索引位置+1
-    unsigned  char             color_;                        //节点color
-};
-
-/**
- *单个节点类
-* */
-#pragma pack(1)
-template<typename CLASS_TYPE,typename INDEX_TYPE = unsigned int>
-struct RBTNode
-{
-public:
-    typedef CLASS_TYPE &reference;
-    typedef CLASS_TYPE *pointer;
-    RBTNode()
-    {
-        clear_list();
-    }
-
-    ~RBTNode()
-    {
-        clear_list();
-    }
-
-    void clear_list()
-    {
-        list_node_.cur_ = 0;
-        list_node_.next_ = 0;
-        list_node_.prev_ = 0;
-        list_node_._ = 0;
-        list_node_.color_ = RBColorNone;
-        memset(data_, 0, sizeof(CLASS_TYPE));
-    }
-
-    void clear_rb()
-    {
-        rbt_node_.cur_ = 0;
-        rbt_node_.parent_ = 0;
-        rbt_node_.left_ = 0;
-        rbt_node_.right_ = 0;
-        rbt_node_.color_ = RBColorNone;
-        memset(data_, 0, sizeof(CLASS_TYPE));
-    }
-    void set_cur(INDEX_TYPE value)  { list_node_.cur_ = value;}
-    INDEX_TYPE  get_cur()           { return list_node_.cur_;}
-
-    void set_next(INDEX_TYPE value)  { list_node_.next_ = value;}
-    INDEX_TYPE  get_next()           { return list_node_.next_;}
-
-    void set_prev(INDEX_TYPE value)  { list_node_.prev_ = value;}
-    INDEX_TYPE  get_prev()           { return list_node_.prev_;}
-
-    void dis_from_list()
-    {
-      set_next(0);
-      set_prev(0);
-    }
-
-    reference value()
-    {
-        return *(reinterpret_cast<pointer>(data_));
-    }
-
-    char* data()
-    {
-        return data_;
-    }
-private:
-    char data_[sizeof(CLASS_TYPE)];       //真正存放对象信息的内存块 c++ placement new operator把对象new到指定的内存位置
-    union
-    {
-        listNode<INDEX_TYPE> list_node_;
-        rbtNode<INDEX_TYPE>  rbt_node_;
-    };
-};
-
 /**
  *迭代器class
 * */
@@ -202,97 +103,7 @@ public:
         return 0;
     }
 private:
-    node_type *ptr_;            //节点指针
-    node_type *array_;            //节点所属的数组
-    std::size_t size_;            //数组长度
-};
-
-template<typename CLASS_TYPE>
-struct node_list_const_iterator
-{
-public:
-    typedef RBTNode<CLASS_TYPE> node_type;
-    typedef node_list_const_iterator<CLASS_TYPE> iterator_type;
-    typedef const CLASS_TYPE *pointer;
-    typedef const CLASS_TYPE &reference;
-
-    node_list_const_iterator(const iterator_type &other)
-        : ptr_(other.ptr_), array_(other.array_), size_(other.size_)
-    {}
-
-    explicit node_list_const_iterator(node_type *pptr_, node_type *parray_, int psize_)
-        : ptr_(pptr_), array_(parray_), size_(psize_)
-    {}
-
-    node_list_const_iterator()
-        : ptr_(0), array_(0), size_(0)
-    {}
-
-    reference operator*() const
-    {
-        return ptr_->value();
-    }
-
-    pointer operator->() const
-    {
-        return &(operator*());
-    }
-
-    iterator_type &operator++()
-    {
-        ptr_ = get_node(ptr_->next());
-        return *this;
-    }
-
-    iterator_type operator++(int)
-    {
-        iterator_type __tmp(*this);
-        ++*this;
-        return __tmp;
-    }
-
-    iterator_type &operator--()
-    {
-        ptr_ = get_node(ptr_->prev());
-        return *this;
-    }
-
-    iterator_type operator--(int)
-    {
-        iterator_type __tmp(*this);
-        --*this;
-        return __tmp;
-    }
-
-    bool operator==(const iterator_type &other) const
-    {
-        return ptr_ == other.ptr_;
-    }
-
-    bool operator!=(const iterator_type &other) const
-    {
-        return !(*this == other);
-    }
-
-    iterator_type &operator=(const iterator_type &other)
-    {
-        if (this != &other) {
-            ptr_ = other.ptr_;
-            array_ = other.array_;
-            size_ = other.size_;
-        }
-        return *this;
-    }
-
-    node_type *get_node(int index)
-    {
-        if (index > 0 && index <= size_) {
-            return &array_[index - 1];
-        }
-        return 0;
-    }
-private:
-    node_type *ptr_;            //节点指针
+    node_type *ptr_;               //节点指针
     node_type *array_;            //节点所属的数组
     std::size_t size_;            //数组长度
 };
@@ -306,7 +117,6 @@ class node_pool
 public:
     typedef RBTNode<ClassType_, IndexType_> node_type;
     typedef node_list_iterator<ClassType_> iterator;
-    typedef node_list_const_iterator<ClassType_> const_iterator;
     typedef ClassType_ *pointer;
     typedef const ClassType_ *const_pointer;
     typedef ClassType_ &reference;
@@ -449,11 +259,6 @@ public:
         return iterator(get_node(index), node_array_, Cap_);
     }
 
-    const_iterator make_const_iteator(std::size_t index)
-    {
-        return const_iterator(get_node(index), node_array_, Cap_);
-    }
-
     // 下面为访问已经分配对象的iterator
     iterator begin()
     {
@@ -468,21 +273,6 @@ public:
     iterator end()
     {
         return iterator();
-    }
-
-    const_iterator begin() const
-    {
-        if (used_node_head_ != -1) {
-            return const_iterator(get_node(used_node_head_), node_array_, Cap_);
-        }
-        else {
-            return end();
-        }
-    }
-
-    const_iterator end() const
-    {
-        return const_iterator();
     }
 
 private:
@@ -619,10 +409,10 @@ private:
         node_->dis_from_list();
     }
 private:
-    IndexType_ size_;                    //内存池已用数量
+    IndexType_ size_;                            //内存池已用数量
     IndexType_ used_node_head_;                  //已用的节点链表头节点的索引
     IndexType_ free_node_head_;                  //空闲的节点链表头节点的索引
-    node_type node_array_[Cap_];
+    node_type  node_array_[Cap_];
 };
 }
 
