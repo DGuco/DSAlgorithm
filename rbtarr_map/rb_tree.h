@@ -12,9 +12,12 @@
 #include <iostream>
 using namespace std;
 
+#define RB_TREE_JAVA 1
+
 enum RBTColor
 {
-    RED, BLACK
+    RB_RED = 0X0,
+    RB_BLACK = 0X1,
 };
 
 template<class T>
@@ -26,21 +29,67 @@ public:
     RBTNode *left;     // 左孩子
     RBTNode *right;    // 右孩子
     RBTNode *parent;   // 父结点
-
+public:
     RBTNode(T value, RBTColor c, RBTNode *p, RBTNode *l, RBTNode *r)
         :
         key(value), color(c), parent(), left(l), right(r)
     {}
+
+    static inline RBTNode<T>* parentOf(RBTNode<T>* node)
+    {
+        return  node == NULL ? NULL : node->parent;
+    }
+
+    static inline RBTColor colorOf(RBTNode<T>* node)
+    {
+        return node == NULL ? RB_BLACK : node->color;
+    }
+
+    static inline bool isRed(RBTNode<T>* node)
+    {
+        return colorOf(node) == RB_RED;
+    }
+
+    static inline bool isBlack(RBTNode<T>* node)
+    {
+        return colorOf(node) == RB_BLACK;
+    }
+
+    static inline void setColor(RBTNode<T>* node,RBTColor color)
+    {
+        if(node != NULL) node->color = color;
+    }
+
+    static inline void setRed(RBTNode<T>* node)
+    {
+        setColor(node,RB_RED);
+    }
+
+    static inline void setBlack(RBTNode<T>* node)
+    {
+        setColor(node,RB_BLACK);
+    }
+
+    static inline RBTNode<T>* leftOf(RBTNode<T>* node)
+    {
+        return node == NULL ? NULL : node->left;
+    }
+
+    static inline RBTNode<T>* rightOf(RBTNode<T>* node)
+    {
+        return node == NULL ? NULL : node->right;
+    }
 };
 
-#define rb_parent(r)   ((r)->parent)
-#define rb_color(r) ((r)->color)
-#define rb_is_red(r)   ((r)->color==RED)
-#define rb_is_black(r)  ((r)->color==BLACK)
-#define rb_set_black(r)  do { (r)->color = BLACK; } while (0)
-#define rb_set_red(r)  do { (r)->color = RED; } while (0)
-#define rb_set_parent(r, p)  do { (r)->parent = (p); } while (0)
-#define rb_set_color(r, c)  do { (r)->color = (c); } while (0)
+#define rb_parentOf(node)              (RBTNode<T>::parentOf(node))
+#define rb_colorOf(node)               (RBTNode<T>::colorOf(node))
+#define rb_isRed(node)                 (RBTNode<T>::isRed(node))
+#define rb_isBlack(node)               (RBTNode<T>::isBlack(node))
+#define rb_setColor(node,color)        (RBTNode<T>::setColor(node,color))
+#define rb_setRed(node)                (RBTNode<T>::setRed(node))
+#define rb_setBlack(node)              (RBTNode<T>::setBlack(node))
+#define rb_leftOf(node)                (RBTNode<T>::leftOf(node))
+#define rb_rightOf(node)               (RBTNode<T>::rightOf(node))
 
 template<class T>
 class RBTree
@@ -113,13 +162,14 @@ private:
     // 删除函数
     void remove(RBTNode<T> *&root, RBTNode<T> *node);
     // 删除修正函数
-    void removeFixUp(RBTNode<T> *&root, RBTNode<T> *node, RBTNode<T> *parent);
-
+    void removeFixUp(RBTNode<T> *&root, RBTNode<T> *node);
+    // 删除修正函数
+    void removeFixUp(RBTNode<T> *&root, RBTNode<T> *node,RBTNode<T> *parent);
     // 销毁红黑树
     void destroy(RBTNode<T> *&tree);
-
     // 打印红黑树
     void print(RBTNode<T> *tree, T key, int direction);
+
 private:
     RBTNode<T> *mRoot;    // 根结点
 };
@@ -152,7 +202,7 @@ bool RBTree<T>::isRBTree()
         return true;
     }
     //根节点为黑色
-    if (rb_color(mRoot)  == RED)
+    if (rb_colorOf(mRoot)  == RB_RED)
     {
         cout << "根节点为红色" << endl;
         return false;
@@ -163,7 +213,7 @@ bool RBTree<T>::isRBTree()
     RBTNode<T>* cur = mRoot;
     while (cur)
     {
-        if (rb_color(cur) == BLACK)
+        if (rb_colorOf(cur) == RB_BLACK)
             Blacknum++;
         cur = cur->left;
     }
@@ -184,13 +234,13 @@ bool RBTree<T>::isRBTree(RBTNode<T>* root, int blacknum, int count)
         return false;
     }
     //子节点为红则检查父节点是否为红（通过父节点检查子节点会遇到空节点）
-    if (rb_color(root) == RED && rb_color(rb_parent(root)) == RED)
+    if (rb_colorOf(root) == RB_RED && rb_colorOf(rb_parentOf(root)) == RB_RED)
     {
         cout << "存在连续红色节点" << endl;
         return false;
     }
     //计数黑结点
-    if (rb_color(root) == BLACK)
+    if (rb_colorOf(root) == RB_BLACK)
         count++;
     //递归左右子树
     return isRBTree(root->left, blacknum, count) && isRBTree(root->right, blacknum, count);
@@ -494,26 +544,26 @@ void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
     RBTNode<T> *parent, *gparent;
 
     // 若父节点存在，并且父节点的颜色是红色,根节点是黑色(被插入节点是一定存在非空祖父节点)
-    while ((parent = rb_parent(node)) && rb_is_red(parent))
+    while ((parent = rb_parentOf(node)) && rb_isRed(parent))
     {
-        gparent = rb_parent(parent);
+        gparent = rb_parentOf(parent);
         //若父节点是祖父节点的左孩子
-        if (parent == gparent->left)
+        if (parent == rb_leftOf(gparent))
         {
             // Case 1：叔叔节点是红色
             RBTNode<T> *uncle = gparent->right;
-            if (uncle && rb_is_red(uncle))
+            if (rb_isRed(uncle))
             {
-                rb_set_black(parent);//  (01) 将“父节点”设为黑色。
-                rb_set_black(uncle); //  (02) 将“叔叔节点”设为黑色。
-                rb_set_red(gparent); //  (03) 将“祖父节点”设为“红色”。
+                rb_setBlack(parent);//  (01) 将“父节点”设为黑色。
+                rb_setBlack(uncle); //  (02) 将“叔叔节点”设为黑色。
+                rb_setRed(gparent); //  (03) 将“祖父节点”设为“红色”。
                 node = gparent;      //  (04) 将“祖父节点”设为“当前节点”(红色节点)
             }else  //红黑树特性,空节点或者黑色的非空节点都为黑色节点(叔叔是黑色)
             {
-                if(0) //实现方法1  算法导论
+                if(!RB_TREE_JAVA) //实现方法1  算法导论 https://www.cnblogs.com/skywang12345/p/3624291.html
                 {
                     // Case 2：叔叔是黑色，且当前节点是右孩子
-                    if (parent->right == node)
+                    if (rb_rightOf(parent) == node)
                     {
                         RBTNode<T> *tmp;
                         leftRotate(root, parent);  // (01) 将“父节点”作为“新的当前节点”。 (02) 以“新的当前节点”为支点进行左旋。
@@ -522,22 +572,20 @@ void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
                         node = tmp;
                     }
                     // Case 3条件：叔叔是黑色，且当前节点是左孩子。
-                    rb_set_black(parent);               //(01) 将“父节点”设为“黑色”。
-                    rb_set_red(gparent);                //(02) 将“祖父节点”设为“红色”。
-                    rightRotate(root, gparent);      //(03) 以“祖父节点”为支点进行右旋。
-                }
-
-                if (1)  //实现方法2 java jdk TreeMap(fixAfterInsertion)
+                    rb_setBlack(parent);                        //(01) 将“父节点”设为“黑色”。
+                    rb_setRed(gparent);                         //(02) 将“祖父节点”设为“红色”。
+                    rightRotate(root, gparent);              //(03) 以“祖父节点”为支点进行右旋。
+                }else //实现方法2 java jdk TreeMap(fixAfterInsertion)
                 {
-                    if (parent->right == node)
+                    if (rb_rightOf(parent) == node)
                     {
                         node = parent;
                         leftRotate(root,node);
                     }
                     //如意如果parent->right == node，这里的rb_parent(node)是对左旋之后的树进行操作，最终的结果和方法1是一样的
-                    rb_set_black(rb_parent(node));
-                    rb_set_red(rb_parent(rb_parent(node)));
-                    rightRotate(root,rb_parent(rb_parent(node)));
+                    rb_setBlack(rb_parentOf(node));
+                    rb_setRed(rb_parentOf(rb_parentOf(node)));
+                    rightRotate(root,rb_parentOf(rb_parentOf(node)));
                 }
 
             }
@@ -546,18 +594,18 @@ void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
         {
             // Case 1条件：叔叔节点是红色
             RBTNode<T> *uncle = gparent->left;
-            if (uncle && rb_is_red(uncle))
+            if (rb_isRed(uncle))
             {
-                rb_set_black(parent); //  (01) 将“父节点”设为黑色。
-                rb_set_black(uncle);  //  (02) 将“叔叔节点”设为黑色。
-                rb_set_red(gparent);  //  (03) 将“祖父节点”设为“红色”。
+                rb_setBlack(parent); //  (01) 将“父节点”设为黑色。
+                rb_setBlack(uncle);  //  (02) 将“叔叔节点”设为黑色。
+                rb_setRed(gparent);  //  (03) 将“祖父节点”设为“红色”。
                 node = gparent;       //  (04) 将“祖父节点”设为“当前节点”(红色节点)
             }else //红黑树特性,空节点或者黑色的非空节点都为黑色节点(叔叔是黑色)
             {
-                if(0)   //实现方法1  算法导论
+                if(!RB_TREE_JAVA)   //实现方法1  算法导论 https://www.cnblogs.com/skywang12345/p/3624291.html
                 {
                     // Case 2条件：叔叔是黑色，且当前节点是左孩子
-                    if (parent->left == node)
+                    if (rb_leftOf(parent) == node)
                     {
                         RBTNode<T> *tmp;
                         rightRotate(root, parent);
@@ -567,28 +615,26 @@ void RBTree<T>::insertFixUp(RBTNode<T> *&root, RBTNode<T> *node)
                     }
 
                     // Case 3条件：叔叔是黑色，且当前节点是右孩子。
-                    rb_set_black(parent);
-                    rb_set_red(gparent);
+                    rb_setBlack(parent);
+                    rb_setRed(gparent);
                     leftRotate(root, gparent);
-                }
-
-                if(1) //实现方法2 java jdk TreeMap(fixAfterInsertion)
+                }else //实现方法2 java jdk TreeMap(fixAfterInsertion)
                 {
-                    if (parent->left == node)
+                    if (rb_leftOf(parent) == node)
                     {
                         node = parent;
                         rightRotate(root,node);
                     }
-                    rb_set_black(rb_parent(node));
-                    rb_set_red(rb_parent(rb_parent(node)));
-                    leftRotate(root, rb_parent(rb_parent(node)));
+                    rb_setBlack(rb_parentOf(node));
+                    rb_setRed(rb_parentOf(rb_parentOf(node)));
+                    leftRotate(root, rb_parentOf(rb_parentOf(node)));
                 }
             }
         }
     }
 
     // 将根节点设为黑色
-    rb_set_black(root);
+    rb_setBlack(root);
 }
 
 /*
@@ -633,7 +679,7 @@ void RBTree<T>::insert(RBTNode<T> *&root, RBTNode<T> *node)
     }
 
     //设置节点的颜色为红色
-    node->color = RED;
+    rb_setRed(node);
     //将它重新修正为一颗二叉查找树
     insertFixUp(root, node);
 }
@@ -651,7 +697,7 @@ void RBTree<T>::insert(T key)
     RBTNode<T> *z = NULL;
 
     // 如果新建结点失败，则返回。
-    if ((z = new RBTNode<T>(key, BLACK, NULL, NULL, NULL)) == NULL)
+    if ((z = new RBTNode<T>(key, RB_BLACK, NULL, NULL, NULL)) == NULL)
         return;
 
     insert(mRoot, z);
@@ -668,86 +714,169 @@ void RBTree<T>::insert(T key)
  *     node 待修正的节点
  */
 template<class T>
-void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node, RBTNode<T> *parent)
+void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node)
 {
     RBTNode<T> *other;
 
-    while ((!node || rb_is_black(node)) && node != root)
+    while (node != root && rb_isBlack(node))
     {
-        if (parent->left == node)
+        if (rb_leftOf(rb_parentOf(node)) == node)
         {
-            other = parent->right;
-            if (rb_is_red(other))
+            other = rb_rightOf(rb_parentOf(node));
+            if (rb_isRed(other))
             {
                 // Case 1: x的兄弟w是红色的
-                rb_set_black(other);
-                rb_set_red(parent);
-                leftRotate(root, parent);
-                other = parent->right;
+                rb_setBlack(other);
+                rb_setRed(rb_parentOf(node));
+                leftRotate(root, rb_parentOf(node));
+                other = rb_rightOf(rb_parentOf(node));
             }
-            if ((!other->left || rb_is_black(other->left)) &&
-                (!other->right || rb_is_black(other->right)))
+            if (rb_isBlack(rb_leftOf(other)) && rb_isBlack(rb_rightOf(other)))
             {
                 // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
-                rb_set_red(other);
-                node = parent;
-                parent = rb_parent(node);
+                rb_setRed(other);
+                node = rb_parentOf(node);
             }
             else {
-                if (!other->right || rb_is_black(other->right))
+                if (rb_isBlack(rb_rightOf(other)))
                 {
                     // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
-                    rb_set_black(other->left);
-                    rb_set_red(other);
+                    rb_setBlack(rb_leftOf(other));
+                    rb_setRed(other);
                     rightRotate(root, other);
-                    other = parent->right;
+                    other = rb_rightOf(rb_parentOf(node));
                 }
                 // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
-                rb_set_color(other, rb_color(parent));
-                rb_set_black(parent);
-                rb_set_black(other->right);
-                leftRotate(root, parent);
+                rb_setColor(other, rb_colorOf(rb_parentOf(node)));
+                rb_setBlack(rb_parentOf(node));
+                rb_setBlack(rb_rightOf(other));
+                leftRotate(root, rb_parentOf(node));
                 node = root;
             }
         }
         else {
-            other = parent->left;
-            if (rb_is_red(other))
+            other = rb_leftOf(rb_parentOf(node));
+            if (rb_isRed(other))
             {
                 // Case 1: x的兄弟w是红色的
-                rb_set_black(other);
-                rb_set_red(parent);
-                rightRotate(root, parent);
-                other = parent->left;
+                rb_setBlack(other);
+                rb_setRed(rb_parentOf(node));
+                rightRotate(root, rb_parentOf(node));
+                other = rb_leftOf(rb_parentOf(node));
             }
-            if ((!other->left || rb_is_black(other->left)) &&
-                (!other->right || rb_is_black(other->right)))
+            if (rb_isBlack(rb_leftOf(other)) && rb_isBlack(rb_rightOf(other)))
             {
                 // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
-                rb_set_red(other);
-                node = parent;
-                parent = rb_parent(node);
+                rb_setRed(other);
+                node = rb_parentOf(node);
             }
             else {
-                if (!other->left || rb_is_black(other->left))
+                if (rb_isBlack(rb_leftOf(other)))
                 {
                     // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
-                    rb_set_black(other->right);
-                    rb_set_red(other);
+                    rb_setBlack(rb_rightOf(other));
+                    rb_setRed(other);
                     leftRotate(root, other);
-                    other = parent->left;
+                    other = rb_leftOf(rb_parentOf(other));
                 }
                 // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
-                rb_set_color(other, rb_color(parent));
-                rb_set_black(parent);
-                rb_set_black(other->left);
-                rightRotate(root, parent);
+                rb_setColor(other, rb_colorOf(rb_parentOf(node)));
+                rb_setBlack(rb_parentOf(node));
+                rb_setBlack(rb_leftOf(other));
+                rightRotate(root, rb_parentOf(node));
                 node = root;
             }
         }
     }
     if (node)
-        rb_set_black(node);
+        rb_setBlack(node);
+}
+
+// 删除修正函数
+template<class T>
+void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node,RBTNode<T> *parent)
+{
+    RBTNode<T> *other;
+
+    while ((!node || rb_isBlack(node)) && node != root)
+    {
+        if (rb_leftOf(parent) == node)
+        {
+            other = parent->right;
+            if (rb_isRed(other))
+            {
+                // Case 1: x的兄弟w是红色的
+                rb_setBlack(other);
+                rb_setRed(parent);
+                leftRotate(root, parent);
+                other = rb_rightOf(parent);
+            }
+            if (rb_isBlack(rb_leftOf(other)) && rb_isBlack(rb_rightOf(other)))
+            {
+                // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
+                rb_setRed(other);
+                node = parent;
+                parent = rb_parentOf(node);
+            }
+            else
+            {
+                if (rb_isBlack(rb_rightOf(other)))
+                {
+                    // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
+                    rb_setBlack(other->left);
+                    rb_setRed(other);
+                    rightRotate(root, other);
+                    other = rb_rightOf(parent);
+                }
+                // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
+                rb_setColor(other, rb_colorOf(parent));
+                rb_setBlack(parent);
+                rb_setBlack(rb_rightOf(other));
+                leftRotate(root, parent);
+                node = root;
+                break;
+            }
+        }
+        else
+        {
+            other = rb_leftOf(parent);
+            if (rb_isRed(other))
+            {
+                // Case 1: x的兄弟w是红色的
+                rb_setBlack(other);
+                rb_setRed(parent);
+                rightRotate(root, parent);
+                other = rb_leftOf(parent);
+            }
+            if (rb_isBlack(rb_leftOf(other)) && rb_isBlack(rb_rightOf(other)))
+            {
+                // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
+                rb_setRed(other);
+                node = parent;
+                parent = rb_parentOf(node);
+            }
+            else
+            {
+                if (rb_isBlack(other->left))
+                {
+                    // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
+                    rb_setBlack(other->right);
+                    rb_setRed(other);
+                    leftRotate(root, other);
+                    other = rb_leftOf(parent);
+                }
+                // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
+                rb_setColor(other, rb_colorOf(parent));
+                rb_setBlack(parent);
+                rb_setBlack(rb_leftOf(other));
+                rightRotate(root, parent);
+                node = root;
+                break;
+            }
+        }
+    }
+    if (node)
+        rb_setBlack(node);
 }
 
 /*
@@ -760,88 +889,147 @@ void RBTree<T>::removeFixUp(RBTNode<T> *&root, RBTNode<T> *node, RBTNode<T> *par
 template<class T>
 void RBTree<T>::remove(RBTNode<T> *&root, RBTNode<T> *node)
 {
-    RBTNode<T> *child, *parent;
-    RBTColor color;
-
-    // 被删除节点的"左右孩子都不为空"的情况。
-    if ((node->left != NULL) && (node->right != NULL))
+    if(!RB_TREE_JAVA)  //实现方法1  算法导论 https://www.cnblogs.com/skywang12345/p/3624291.html
     {
-        // 被删节点的后继节点。(称为"取代节点")
-        // 用它来取代"被删节点"的位置，然后再将"被删节点"去掉。
-        RBTNode<T> *replace = successor(node);
+        RBTNode<T> *child, *parent;
+        RBTColor color;
 
-        // "node节点"不是根节点d(只有根节点不存在父节点)
-        if (rb_parent(node))
+        // 被删除节点的"左右孩子都不为空"的情况。
+        if ((rb_leftOf(node) != NULL) && (rb_rightOf(node) != NULL))
         {
-            if (rb_parent(node)->left == node)
-                rb_parent(node)->left = replace;
+            // 被删节点的后继节点。(称为"取代节点")
+            // 用它来取代"被删节点"的位置，然后再将"被删节点"去掉。
+            RBTNode<T> *replace = node;
+
+            // 获取后继节点
+            replace = replace->right;
+            while (replace->left != NULL)
+                replace = replace->left;
+
+            // "node节点"不是根节点d(只有根节点不存在父节点)
+            if (rb_parentOf(node))
+            {
+                if (rb_parentOf(node)->left == node)
+                    rb_parentOf(node)->left = replace;
+                else
+                    rb_parentOf(node)->right = replace;
+            }
             else
-                rb_parent(node)->right = replace;
-        }
-        else
-            // "node节点"是根节点，更新根节点。
-            root = replace;
+                // "node节点"是根节点，更新根节点。
+                root = replace;
 
-        // child是"取代节点"的右孩子，也是需要"调整的节点"。
-        // "取代节点"肯定不存在左孩子！因为它是一个后继节点。
-        child = replace->right;
-        parent = rb_parent(replace);
+            // child是"取代节点"的右孩子，也是需要"调整的节点"。
+            // "取代节点"肯定不存在左孩子！因为它是一个后继节点。
+            child = replace->right;
+            parent = rb_parentOf(replace);
+            // 保存"取代节点"的颜色
+            color = rb_colorOf(replace);
+
+            // "被删除节点"是"它的后继节点的父节点"
+            if (parent == node)
+            {
+                parent = replace;
+            }
+            else
+            {
+                // child不为空
+                if (child)
+                    child->parent = parent;
+                parent->left = child;
+
+                replace->right = node->right;
+                node->right->parent = replace;
+            }
+
+            replace->parent = node->parent;
+            replace->color = node->color;
+            replace->left = node->left;
+            node->left->parent = replace;
+
+            if (color == RB_BLACK)
+                removeFixUp(root, child,parent);
+
+            delete node;
+            return;
+        }
+
+        if (node->left != NULL)
+            child = node->left;
+        else
+            child = node->right;
+
+        parent = node->parent;
         // 保存"取代节点"的颜色
-        color = rb_color(replace);
+        color = node->color;
 
-        // "被删除节点"是"它的后继节点的父节点"
-        if (parent == node)
-        {
-            parent = replace;
+        if (child)
+            child->parent = parent;
+
+        // "node节点"不是根节点
+        if (parent) {
+            if (parent->left == node)
+                parent->left = child;
+            else
+                parent->right = child;
         }
         else
-        {
-            // child不为空
-            if (child)
-                rb_set_parent(child, parent);
-            parent->left = child;
+            root = child;
 
-            replace->right = node->right;
-            rb_set_parent(node->right, replace);
-        }
-
-        replace->parent = node->parent;
-        replace->color = node->color;
-        replace->left = node->left;
-        node->left->parent = replace;
-
-        if (color == BLACK)
-            removeFixUp(root, child, parent);
-
+        if (color == RB_BLACK)
+            removeFixUp(root, child,parent);
         delete node;
-        return;
+    }else //实现方法2 java jdk TreeMap(deleteEntry)
+    {
+        // 被删除节点的"左右孩子都不为空"的情况。
+        if ((node->left != NULL) && (node->right != NULL))
+        {
+            RBTNode<T>* succNode = successor(node);
+            node->key = succNode->key;
+            node = succNode;
+        }
+
+        RBTNode<T>* replacement = (node->left != NULL) ? node->left : node->right;
+        if(replacement != NULL)
+        {
+            // Link replacement to parent
+            replacement->parent = node->parent;
+            if (node->parent == NULL)
+                root = replacement;
+            else if (node == node->parent->left)
+                node->parent->left  = replacement;
+            else
+                node->parent->right = replacement;
+
+            // Null out links so they are OK to use by fixAfterDeletion.
+            node->left = node->right = node->parent = NULL;
+            // Fix replacement
+            if (node->color == RB_BLACK)
+                removeFixUp(root,replacement);
+            delete node;
+            node = NULL;
+        }else if(node->parent == NULL)
+        {
+            root = NULL;
+        }else
+        {
+            if(node->color == RB_BLACK)
+            {
+                removeFixUp(root,node);
+            }
+
+            if(node->parent != NULL)
+            {
+                if(node == node->parent->left)
+                {
+                    node->parent->left = NULL;
+                }else if(node == node->parent->right)
+                {
+                    node->parent->right = NULL;
+                }
+                node->parent = NULL;
+            }
+        }
     }
-
-    if (node->left != NULL)
-        child = node->left;
-    else
-        child = node->right;
-
-    parent = node->parent;
-    // 保存"取代节点"的颜色
-    color = node->color;
-
-    if (child)
-        child->parent = parent;
-
-    // "node节点"不是根节点
-    if (parent) {
-        if (parent->left == node)
-            parent->left = child;
-        else
-            parent->right = child;
-    }
-    else
-        root = child;
-
-    if (color == BLACK)
-        removeFixUp(root, child, parent);
-    delete node;
 }
 
 /*
@@ -899,7 +1087,7 @@ void RBTree<T>::print(RBTNode<T> *tree, T key, int direction)
         if (direction == 0)    // tree是根节点
             cout << setw(2) << tree->key << "(B) is root" << endl;
         else                // tree是分支节点
-            cout << setw(2) << tree->key << (rb_is_red(tree) ? "(R)" : "(B)") << " is " << setw(2) << key << "'s "
+            cout << setw(2) << tree->key << ( rb_isRed(tree) ? "(R)" : "(B)") << " is " << setw(2) << key << "'s "
                  << setw(12) << (direction == 1 ? "right child" : "left child") << endl;
 
         print(tree->left, tree->key, -1);
