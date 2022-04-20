@@ -146,7 +146,7 @@ public:
     // 插入函数
     void insert(NodeType_ *node);
     // 删除结点(key为节点键值)
-    void remove(KeyType_ key);
+    NodeType_* remove(KeyType_ key);
     // 打印红黑树
     void print();
     bool isEmpty();
@@ -1055,13 +1055,14 @@ void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
  *     tree 红黑树的根结点
  */
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(KeyType_ key)
+NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(KeyType_ key)
 {
-    NodeType_ *node;
+    NodeType_ *node = NULL;
 
     // 查找key对应的节点(node)，找到的话就删除该节点
     if ((node = search(getNode(m_Root), key)) != NULL)
         remove(node);
+    return  node;
 }
 
 /*

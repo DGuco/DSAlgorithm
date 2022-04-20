@@ -118,11 +118,11 @@ public:
     typedef RBTNode<KeyType_,ValueType_,IndexType_> node_type;
     typedef RBTree<KeyType_,ValueType_,IndexType_,Cap_> tree_type;
     typedef node_list_iterator<KeyType_,ValueType_,IndexType_> iterator;
-    typedef std::pair<KeyType_,ValueType_> ClassType_;
-    typedef ClassType_ *pointer;
-    typedef const ClassType_  *const_pointer;
-    typedef ClassType_ &reference;
-    typedef const ClassType_ &const_reference;
+    typedef std::pair<KeyType_,ValueType_> class_type;
+    typedef class_type *pointer;
+    typedef const class_type  *const_pointer;
+    typedef class_type &reference;
+    typedef const class_type &const_reference;
 
     //构造函数
     node_pool()
@@ -172,7 +172,7 @@ public:
     }
 
     //申请一个可用节点
-    node_type *allocate_node(const ClassType_ &v)
+    node_type *allocate_node(const class_type &v)
     {
         node_type *p = allocate(v);
         if (p) {
@@ -199,7 +199,7 @@ public:
     }
 
     //申请一个可用节点
-    node_type *allocate_node(const ClassType_ &v, node_type *next_node)
+    node_type *allocate_node(const class_type &v, node_type *next_node)
     {
         node_type *p = allocate(v);
         if (p) {
@@ -283,7 +283,7 @@ public:
 
 private:
     //申请空间
-    node_type *allocate(const ClassType_ &v)
+    node_type *allocate(const class_type &v)
     {
         if (size_ >= Cap_)
         {
@@ -296,7 +296,7 @@ private:
             //先把空闲头结点指向当前空闲头结点的下一个节点
             free_node_head_ = p->get_next();
             //call c++ placement new
-            new(p->data()) ClassType_(v);
+            new(p->data()) class_type(v);
             p->clear_rb();
             return p;
         }
@@ -320,7 +320,7 @@ private:
             //先把空闲头结点指向当前空闲头结点的下一个节点
             free_node_head_ = p->get_next();
             //call c++ placement new
-            new(p->data()) ClassType_();
+            new(p->data()) class_type();
             p->clear_rb();
             return p;
         }
@@ -332,11 +332,12 @@ private:
 
     void deallocate(node_type *node_)
     {
-        if (node_ == 0) {
+        if (node_ == NULL)
+        {
             return;
         }
         //调用析构函数
-        node_->value().~CLASS_TYPE();
+        node_->value().~class_type();
         free_node_head_ = node_->get_cur();
         //插入空闲链表头部
         insert_node(get_node(free_node_head_), node_);

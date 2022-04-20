@@ -95,26 +95,40 @@ void testRBTree()
         }
     }
 }
+
+class ValueType
+{
+public:
+    ValueType(int value) : a(value)
+    {
+    }
+
+    ~ValueType()
+    {
+        std::cout << "call ~ValueType() a = " << a << std::endl;
+    }
+    int a;
+};
 int main()
 {
-    RbtHashMap<int,int,TEST_COUNT>* testMap = new RbtHashMap<int,int,TEST_COUNT>();
+    RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
     for(int i = 0;i < TEST_COUNT;i++)
     {
-        testMap->insert(i * HASH_CONFLICT_RATE,i * HASH_CONFLICT_RATE);
+        testMap->insert(i * HASH_CONFLICT_RATE,ValueType(i * HASH_CONFLICT_RATE));
     }
     for(int i = 0;i < TEST_COUNT;i++)
     {
-        RbtHashMap<int,int,TEST_COUNT>::iterator  it = testMap->find(i * HASH_CONFLICT_RATE);
+        RbtHashMap<int,ValueType,TEST_COUNT>::iterator  it = testMap->find(i * HASH_CONFLICT_RATE);
         if(it != testMap->end())
         {
-            int a = it->second;
+            int a = it->second.a;
             std::cout << "it->first = " << it->first << " it->second = " << a << std::endl;
         }else
         {
             std::cout << "lost key = " << i * HASH_CONFLICT_RATE << std::endl;
         }
     }
-
+    testMap->erase(HASH_CONFLICT_RATE * 1);
     std::cout << "Hello, World!" << std::endl;
     delete testMap;
     testMap = NULL;

@@ -28,7 +28,7 @@ public:
 #endif
     typedef node_pool<KeyType_,ValueType_,IndexType_, _Cap> hash_array;
     typedef typename hash_array::tree_type tree_type;
-    typedef typename hash_array::ClassType_ value_type;
+    typedef typename hash_array::class_type class_type;
     typedef typename hash_array::iterator iterator;
     typedef typename hash_array::reference reference;
     typedef typename hash_array::node_type node_type;
@@ -53,7 +53,7 @@ public:
         return hash_array_.size();
     }
 
-    bool insert(const value_type& v)
+    bool insert(const class_type& v)
     {
         hash_function::hash<KeyType_> hash_func;
         std::size_t bucket = hash_func(v.first) % _Cap;
@@ -70,7 +70,7 @@ public:
             }
             rb_tree.insert(new_node);
             //设置链表头和尾
-            buckets_[bucket].root_ = buckets_[bucket].lastson_ = new_node->get_cur();
+            buckets_[bucket].root_ = buckets_[bucket].lastson_ = rb_tree.root();
             return true;
         }
 
@@ -81,7 +81,7 @@ public:
 
         //申请一个节点
         node_type* new_node = hash_array_.allocate_node(v,hash_array_.get_node(buckets_[bucket].root_));
-        value_type value = new_node->value();
+        class_type value = new_node->value();
         if( !new_node )
         {
             return false;
@@ -113,28 +113,24 @@ public:
 
     void erase( iterator it )
     {
-        if ( it == this->end() )
-        {
-            return;
-        }
+
+    }
+
+    std::size_t erase( const KeyType_& k )
+    {
         hash_function::hash<KeyType_> hash_func;
-        std::size_t bucket = hash_func(it->first) % _Cap;
+        std::size_t bucket = hash_func(k) % _Cap;
 
         tree_type rb_tree = hash_array_.make_rbtree(buckets_[bucket].root_);
         //该bucket是空的
         if ( rb_tree.isEmpty())
         {
-            return;
+            return 0;
         }
-        rb_tree.remove(it);
+        node_type* node = rb_tree.remove(k);
         buckets_[bucket].root_ = rb_tree.root();
-        hash_array_.deallocate_node( &*it);
-    }
-
-    std::size_t erase( const KeyType_& k )
-    {
-        erase (find(k));
-        return size();
+        hash_array_.deallocate_node(node);
+        return  0;
     }
 
     void clear()
