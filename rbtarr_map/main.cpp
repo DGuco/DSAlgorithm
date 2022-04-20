@@ -11,9 +11,14 @@
  * https://www.cs.usfca.edu/~galles/visualization/RedBlack.html
  * @return
  */
-int main()
+
+using namespace rbt_hash;
+#define HASH_CONFLICT_RATE 4   //hash冲突倍率
+#define TEST_COUNT 1000
+
+void testRBTree()
 {
-    RBTNode<int,unsigned int> nodeArr[10];
+    RBTNode<int,int> nodeArr[10];
     for(int index = 0;index < 10;index++)
     {
         nodeArr->set_cur(index + 1);
@@ -23,7 +28,7 @@ int main()
     int check_remove=1;    // "删除"动作的检测开关(0，关闭；1，打开)
     int i;
     int ilen = (sizeof(a)) / (sizeof(a[0])) ;
-    RBTree<int,unsigned int,10>* tree = new RBTree<int,unsigned int,10>(nodeArr);
+    RBTree<int,int,unsigned int,10>* tree = new RBTree<int,int,unsigned int,10>(nodeArr);
 
     cout << "== 原始数据: ";
     for(i=0; i<ilen; i++)
@@ -53,7 +58,7 @@ int main()
     }
 
     cout << "== 前序遍历: ";
-    std::list<RBTNode<int>*> resList;
+    std::list<RBTNode<int,int>*> resList;
     resList.clear();
     tree->preOrder(resList);
 
@@ -89,8 +94,29 @@ int main()
             cout << endl;
         }
     }
+}
+int main()
+{
+    RbtHashMap<int,int,TEST_COUNT>* testMap = new RbtHashMap<int,int,TEST_COUNT>();
+    for(int i = 0;i < TEST_COUNT;i++)
+    {
+        testMap->insert(i * HASH_CONFLICT_RATE,i * HASH_CONFLICT_RATE);
+    }
+    for(int i = 0;i < TEST_COUNT;i++)
+    {
+        RbtHashMap<int,int,TEST_COUNT>::iterator  it = testMap->find(i * HASH_CONFLICT_RATE);
+        if(it != testMap->end())
+        {
+            int a = it->second;
+            std::cout << "it->first = " << it->first << " it->second = " << a << std::endl;
+        }else
+        {
+            std::cout << "lost key = " << i * HASH_CONFLICT_RATE << std::endl;
+        }
+    }
 
-    return 0;
     std::cout << "Hello, World!" << std::endl;
+    delete testMap;
+    testMap = NULL;
     return 0;
 }

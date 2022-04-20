@@ -27,20 +27,20 @@ enum RBTColor
  *单个节点类
 * */
 #pragma pack(1)
-template<typename T,typename INDEX_TYPE = unsigned int>
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE = unsigned int>
 struct RBTNode
 {
 public:
-    typedef T &reference;
-    typedef T *pointer;
+    typedef std::pair<KeyType_,ValueType_> NodeDataType_;
+public:
     RBTNode()
     {
-        clear_rb();
+        clear();
     }
 
     ~RBTNode()
     {
-        clear_rb();
+       clear();
     }
 
     void clear_rb()
@@ -48,23 +48,32 @@ public:
         parent_ = 0;
         left_ = 0;
         right_ = 0;
-        color_ = RB_NONE;
-        memset(data_, 0, sizeof(T));
+        color_ = RB_BLACK;
     }
-    inline void set_cur(INDEX_TYPE value)  { cur_ = value;}
-    inline INDEX_TYPE  get_cur()           { return cur_;}
 
-    inline void set_prev(INDEX_TYPE value)  { left_ = value;}
-    inline INDEX_TYPE  get_prev()           { return left_;}
+    void clear()
+    {
+        parent_ = 0;
+        left_ = 0;
+        right_ = 0;
+        color_ = RB_NONE;
+        memset(data_,0,sizeof(NodeDataType_));
+    }
 
-    inline void set_next(INDEX_TYPE value)  { right_ = value;}
-    inline INDEX_TYPE  get_next()           { return right_;}
+    inline void set_cur(INDEX_TYPE value)    { cur_ = value;}
+    inline INDEX_TYPE  get_cur()             { return cur_;}
 
-    inline void set_parent(INDEX_TYPE value)  { parent_ = value;}
-    inline INDEX_TYPE  get_parent()           { return parent_;}
+    inline void set_prev(INDEX_TYPE value)   { left_ = value;}
+    inline INDEX_TYPE  get_prev()            { return left_;}
 
-    inline void set_left(INDEX_TYPE value)  { left_ = value;}
-    inline INDEX_TYPE  get_left()           { return left_;}
+    inline void set_next(INDEX_TYPE value)   { right_ = value;}
+    inline INDEX_TYPE  get_next()            { return right_;}
+
+    inline void set_parent(INDEX_TYPE value) { parent_ = value;}
+    inline INDEX_TYPE  get_parent()          { return parent_;}
+
+    inline void set_left(INDEX_TYPE value)   { left_ = value;}
+    inline INDEX_TYPE  get_left()            { return left_;}
 
     inline void set_right(INDEX_TYPE value)  { right_ = value;}
     inline INDEX_TYPE  get_right()           { return right_;}
@@ -72,8 +81,11 @@ public:
     inline void set_color(RBTColor value)    { color_ = value;}
     inline RBTColor  get_color()             { return (RBTColor)color_;}
 
-    void set_key(T value)            { key = value;}
-    T     get_key()                  { return  key;}
+    inline void set_key(KeyType_ &key_)      { value().first = key_;}
+    inline KeyType_&     get_key()           { return  value().first;}
+
+    inline void set_value(ValueType_& value_){value().second = value_;}
+    inline ValueType_& getValue()            {return  value().second;}
 
     void dis_from_list()
     {
@@ -81,9 +93,9 @@ public:
         set_prev(0);
     }
 
-    reference value()
+    std::pair<KeyType_,ValueType_>& value()
     {
-        return *(reinterpret_cast<pointer>(data_));
+        return *((NodeDataType_*)data_);
     }
 
     char* data()
@@ -93,121 +105,120 @@ public:
 
 
 public:
-    RBTNode(T value, RBTColor c, INDEX_TYPE p, INDEX_TYPE l, INDEX_TYPE r)
-        :
-        key(value), color_(c), parent_(), left_(l), right_(r)
+    RBTNode(KeyType_ value, RBTColor c, INDEX_TYPE p, INDEX_TYPE l, INDEX_TYPE r)
+        : color_(c), parent_(), left_(l), right_(r)
     {}
 private:
-    T                          key;                           // 关键字(键值)
-    char                       data_[sizeof(T)];              //真正存放对象信息的内存块 c++ placement new operator把对象new到指定的内存位置
-    INDEX_TYPE                 cur_;                          //当前节点在数组中的索引位置+1
-    INDEX_TYPE                 parent_;                       //父亲节点在数组中的索引位置+1
-    INDEX_TYPE                 left_;                         //左子节点在数组中的索引位置+1
-    INDEX_TYPE                 right_;                        //右子节点在数组中的索引位置+1
-    unsigned  char             color_;                        //节点color
+    char                                data_[sizeof(NodeDataType_)];  //节点对象信息
+    INDEX_TYPE                          cur_;                          //当前节点在数组中的索引位置+1
+    INDEX_TYPE                          parent_;                       //父亲节点在数组中的索引位置+1
+    INDEX_TYPE                          left_;                         //左子节点在数组中的索引位置+1
+    INDEX_TYPE                          right_;                        //右子节点在数组中的索引位置+1
+    unsigned  char                      color_;                        //节点color
 };
 
-template<typename T,typename INDEX_TYPE = unsigned int,std::size_t Cap_ = 0>
+#define NodeType_ RBTNode<KeyType_,ValueType_,INDEX_TYPE>
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE = unsigned int,std::size_t Cap_ = 0>
 class RBTree
 {
 public:
-    RBTree(RBTNode<T>  *pool);
+    RBTree(NodeType_ *pool,INDEX_TYPE root = 0);
     ~RBTree();
     bool isRBTree();
     // 前序遍历"红黑树"
-    void preOrder(std::list<RBTNode<T>*>& resList);
+    void preOrder(std::list<NodeType_*>& resList);
     // 中序遍历"红黑树"
-    void inOrder(std::list<RBTNode<T>*>& resList);
+    void inOrder(std::list<NodeType_*>& resList);
     // 后序遍历"红黑树"
-    void postOrder(std::list<RBTNode<T>*>& resList);
+    void postOrder(std::list<NodeType_*>& resList);
     // (递归实现)查找"红黑树"中键值为key的节点
-    RBTNode<T> *search(T key);
+    NodeType_ *search(KeyType_ key);
     // (非递归实现)查找"红黑树"中键值为key的节点
-    RBTNode<T> *iterativeSearch(T key);
+    NodeType_ *iterativeSearch(KeyType_ key);
     // 查找最小结点：返回最小结点的键值。
-    T minimum();
+    KeyType_ minimum();
     // 查找最大结点：返回最大结点的键值。
-    T maximum();
+    KeyType_ maximum();
     // 找结点(x)的后继结点。即，查找"红黑树中数据值大于该结点"的"最小结点"。
-    RBTNode<T> *successor(RBTNode<T> *x);
+    NodeType_ *successor(NodeType_ *x);
     // 找结点(x)的前驱结点。即，查找"红黑树中数据值小于该结点"的"最大结点"。
-    RBTNode<T> *predecessor(RBTNode<T> *x);
+    NodeType_ *predecessor(NodeType_ *x);
     // 插入函数
-    void insert(RBTNode<T> *node);
+    void insert(NodeType_ *node);
     // 删除结点(key为节点键值)
-    void remove(T key);
+    void remove(KeyType_ key);
     // 打印红黑树
     void print();
+    bool isEmpty();
+    INDEX_TYPE root();
 private:
-    bool isRBTree(RBTNode<T>* root, int blacknum, int count);
+    bool isRBTree(NodeType_* root, int blacknum, int count);
     // 前序遍历"红黑树"
-    void preOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList) ;
+    void preOrder(NodeType_ *tree, std::list<NodeType_*>& resList) ;
     // 中序遍历"红黑树"
-    void inOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList) ;
+    void inOrder(NodeType_ *tree, std::list<NodeType_*>& resList) ;
     // 后序遍历"红黑树"
-    void postOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList) ;
-
+    void postOrder(NodeType_ *tree, std::list<NodeType_*>& resList) ;
     // (递归实现)查找"红黑树x"中键值为key的节点
-    RBTNode<T> *search(RBTNode<T> *x, T key);
+    NodeType_ *search(NodeType_ *x, KeyType_ key);
     // (非递归实现)查找"红黑树x"中键值为key的节点
-    RBTNode<T> *iterativeSearch(RBTNode<T> *x, T key);
-
+    NodeType_ *iterativeSearch(NodeType_ *x, KeyType_ key);
     // 查找最小结点：返回tree为根结点的红黑树的最小结点。
-    RBTNode<T> *minimum(RBTNode<T> *tree);
+    NodeType_ *minimum(NodeType_ *tree);
     // 查找最大结点：返回tree为根结点的红黑树的最大结点。
-    RBTNode<T> *maximum(RBTNode<T> *tree);
+    NodeType_ *maximum(NodeType_ *tree);
     // 左旋
-    void leftRotate(RBTNode<T> *x);
+    void leftRotate(NodeType_ *x);
     // 右旋
-    void rightRotate(RBTNode<T> *y);
+    void rightRotate(NodeType_ *y);
     // 插入修正函数
-    void insertFixUp(RBTNode<T> *node);
+    void insertFixUp(NodeType_ *node);
     // 删除函数
-    void remove(RBTNode<T> *node);
+    void remove(NodeType_ *node);
     // 删除修正函数
-    void removeFixUp(RBTNode<T> *node);
+    void removeFixUp(NodeType_ *node);
     // 删除修正函数
-    void removeFixUp(RBTNode<T> *node,RBTNode<T> *parent);
+    void removeFixUp(NodeType_ *node, NodeType_ *parent);
     // 打印红黑树
-    void print(RBTNode<T> *tree, T key, int direction);
-    inline RBTNode<T>* getNode(INDEX_TYPE index);
-    inline RBTNode<T> *parentOf(RBTNode<T> *node);
-    inline void *setParent(RBTNode<T> *node,RBTNode<T> *parent);
-    inline RBTColor colorOf(RBTNode<T> *node);
-    inline bool isRed(RBTNode<T> *node);
-    inline bool isBlack(RBTNode<T> *node);
-    inline void setColor(RBTNode<T> *node,RBTColor color);
-    inline void setRed(RBTNode<T> *node);
-    inline void setBlack(RBTNode<T> *node);
-    inline RBTNode<T> *leftOf(RBTNode<T> *node);
-    inline void *setLeft(RBTNode<T> *node,RBTNode<T> *left);
-    inline RBTNode<T> *rightOf(RBTNode<T> *node);
-    inline void setRight(RBTNode<T> *node,RBTNode<T> *right);
-    inline INDEX_TYPE curOf(RBTNode<T> *node);
+    void print(NodeType_ *tree, KeyType_ key, int direction);
+    inline NodeType_* getNode(INDEX_TYPE index);
+    inline NodeType_ *parentOf(NodeType_ *node);
+    inline void *setParent(NodeType_ *node, NodeType_ *parent);
+    inline RBTColor colorOf(NodeType_ *node);
+    inline bool isRed(NodeType_ *node);
+    inline bool isBlack(NodeType_ *node);
+    inline void setColor(NodeType_ *node, RBTColor color);
+    inline void setRed(NodeType_ *node);
+    inline void setBlack(NodeType_ *node);
+    inline NodeType_ *leftOf(NodeType_ *node);
+    inline void *setLeft(NodeType_ *node, NodeType_ *left);
+    inline NodeType_ *rightOf(NodeType_ *node);
+    inline void setRight(NodeType_ *node, NodeType_ *right);
+    inline INDEX_TYPE curOf(NodeType_ *node);
 private:
-    RBTNode<T>  *m_Pool;    //
+    NodeType_  *m_Pool;    //
     INDEX_TYPE   m_Root;
 };
 
 /*
  * 构造函数
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTree<T,INDEX_TYPE,Cap_>::RBTree(RBTNode<T>  *pool)
-    :m_Pool(pool),m_Root(0)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::RBTree(NodeType_  *pool,INDEX_TYPE root)
+    :m_Pool(pool),m_Root(root)
 {
 }
 
 /*
  * 析构函数
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTree<T,INDEX_TYPE,Cap_>::~RBTree()
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::~RBTree()
 {
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-bool RBTree<T,INDEX_TYPE,Cap_>::isRBTree()
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+bool RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::isRBTree()
 {
     //空树
     if (getNode(m_Root) == nullptr)
@@ -223,7 +234,7 @@ bool RBTree<T,INDEX_TYPE,Cap_>::isRBTree()
     //黑色结点数量各路径上相同
     //先走一条得到基准值
     int Blacknum = 0;
-    RBTNode<T>* cur = getNode(m_Root);
+    NodeType_* cur = getNode(m_Root);
     while (cur)
     {
         if (colorOf(cur) == RB_BLACK)
@@ -235,8 +246,8 @@ bool RBTree<T,INDEX_TYPE,Cap_>::isRBTree()
     return isRBTree(getNode(m_Root), Blacknum, i);
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-bool RBTree<T,INDEX_TYPE,Cap_>::isRBTree(RBTNode<T>* root, int blacknum, int count)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+bool RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::isRBTree(NodeType_* root, int blacknum, int count)
 {
     //递归到空节点
     if (root == nullptr)
@@ -262,8 +273,8 @@ bool RBTree<T,INDEX_TYPE,Cap_>::isRBTree(RBTNode<T>* root, int blacknum, int cou
 /*
  * 前序遍历"红黑树"
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::preOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::preOrder(NodeType_ *tree, std::list<NodeType_*>& resList)
 {
     if (tree != NULL) {
         if(DEBUG_RB_TREE)
@@ -276,8 +287,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::preOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>
     }
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::preOrder(std::list<RBTNode<T>*>& resList)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::preOrder(std::list<NodeType_*>& resList)
 {
     preOrder(getNode(m_Root),resList);
 }
@@ -285,8 +296,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::preOrder(std::list<RBTNode<T>*>& resList)
 /*
  * 中序遍历"红黑树"
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::inOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::inOrder(NodeType_ *tree, std::list<NodeType_*>& resList)
 {
     if (tree != NULL) {
         inOrder(leftOf(tree),resList);
@@ -299,8 +310,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::inOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>&
     }
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::inOrder(std::list<RBTNode<T>*>& resList)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::inOrder(std::list<NodeType_*>& resList)
 {
     inOrder(getNode(m_Root),resList);
 }
@@ -308,8 +319,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::inOrder(std::list<RBTNode<T>*>& resList)
 /*
  * 后序遍历"红黑树"
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::postOrder(RBTNode<T> *tree,std::list<RBTNode<T>*>& resList)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::postOrder(NodeType_ *tree, std::list<NodeType_*>& resList)
 {
     if (tree != NULL)
     {
@@ -323,8 +334,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::postOrder(RBTNode<T> *tree,std::list<RBTNode<T>*
     }
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::postOrder(std::list<RBTNode<T>*>& resList)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::postOrder(std::list<NodeType_*>& resList)
 {
     postOrder(getNode(m_Root),resList);
 }
@@ -332,8 +343,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::postOrder(std::list<RBTNode<T>*>& resList)
 /*
  * (递归实现)查找"红黑树x"中键值为key的节点
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::search(RBTNode<T> *x, T key)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::search(NodeType_ *x, KeyType_ key)
 {
     if (x == NULL || x->get_key() == key)
         return x;
@@ -344,8 +355,8 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::search(RBTNode<T> *x, T key)
         return search(rightOf(x), key);
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::search(T key)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::search(KeyType_ key)
 {
     search(getNode(m_Root), key);
 }
@@ -353,8 +364,8 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::search(T key)
 /*
  * (非递归实现)查找"红黑树x"中键值为key的节点
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::iterativeSearch(RBTNode<T> *x, T key)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::iterativeSearch(NodeType_ *x, KeyType_ key)
 {
     while ((x != NULL) && (x->key != key)) {
         if (key < x->key)
@@ -366,8 +377,8 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::iterativeSearch(RBTNode<T> *x, T key)
     return x;
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::iterativeSearch(T key)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::iterativeSearch(KeyType_ key)
 {
     iterativeSearch(getNode(m_Root), key);
 }
@@ -375,8 +386,8 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::iterativeSearch(T key)
 /*
  * 查找最小结点：返回tree为根结点的红黑树的最小结点。
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::minimum(RBTNode<T> *tree)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::minimum(NodeType_ *tree)
 {
     if (tree == NULL)
         return NULL;
@@ -386,21 +397,21 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::minimum(RBTNode<T> *tree)
     return tree;
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-T RBTree<T,INDEX_TYPE,Cap_>::minimum()
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+KeyType_ RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::minimum()
 {
-    RBTNode<T> *p = minimum(getNode(m_Root));
+    NodeType_ *p = minimum(getNode(m_Root));
     if (p != NULL)
         return p->get_key();
 
-    return (T) NULL;
+    return (KeyType_) NULL;
 }
 
 /*
  * 查找最大结点：返回tree为根结点的红黑树的最大结点。
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::maximum(RBTNode<T> *tree)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::maximum(NodeType_ *tree)
 {
     if (tree == NULL)
         return NULL;
@@ -410,21 +421,21 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::maximum(RBTNode<T> *tree)
     return tree;
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-T RBTree<T,INDEX_TYPE,Cap_>::maximum()
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+KeyType_ RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::maximum()
 {
-    RBTNode<T> *p = maximum(getNode(m_Root));
+    NodeType_ *p = maximum(getNode(m_Root));
     if (p != NULL)
         return p->get_key();
 
-    return (T) NULL;
+    return (KeyType_) NULL;
 }
 
 /*
  * 找结点(x)的后继结点。即，查找"红黑树中数据值大于该结点"的"最小结点"。
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::successor(RBTNode<T> *x)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::successor(NodeType_ *x)
 {
     if(x == NULL)
     {
@@ -438,7 +449,7 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::successor(RBTNode<T> *x)
     // 如果x没有右孩子。则x有以下两种可能：
     // (01) x是"一个左孩子"，则"x的后继结点"为 "它的父结点"。
     // (02) x是"一个右孩子"，则查找"x的最低的父结点，并且该父结点要具有左孩子"，找到的这个"最低的父结点"就是"x的后继结点"。
-    RBTNode<T> *y = parentOf(x);
+    NodeType_ *y = parentOf(x);
     while ((y != NULL) && (x == rightOf(y)))
     {
         x = y;
@@ -450,8 +461,8 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::successor(RBTNode<T> *x)
 /*
  * 找结点(x)的前驱结点。即，查找"红黑树中数据值小于该结点"的"最大结点"。
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::predecessor(RBTNode<T> *x)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::predecessor(NodeType_ *x)
 {
     // 如果x存在左孩子，则"x的前驱结点"为 "以其左孩子为根的子树的最大结点"。
     if (x->left != NULL)
@@ -460,7 +471,7 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::predecessor(RBTNode<T> *x)
     // 如果x没有左孩子。则x有以下两种可能：
     // (01) x是"一个右孩子"，则"x的前驱结点"为 "它的父结点"。
     // (01) x是"一个左孩子"，则查找"x的最低的父结点，并且该父结点要具有右孩子"，找到的这个"最低的父结点"就是"x的前驱结点"。
-    RBTNode<T> *y = x->parent;
+    NodeType_ *y = x->parent;
     while ((y != NULL) && (x == y->left)) {
         x = y;
         y = y->parent;
@@ -480,11 +491,11 @@ RBTNode<T> *RBTree<T,INDEX_TYPE,Cap_>::predecessor(RBTNode<T> *x)
  *     /   \                       /  \
  *    ly   ry                     lx  ly
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::leftRotate(RBTNode<T> *x)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::leftRotate(NodeType_ *x)
 {
     // 设置x的右孩子为y
-    RBTNode<T> *y = rightOf(x);
+    NodeType_ *y = rightOf(x);
 
     // 将 “y的左孩子” 设为 “x的右孩子”；
     // 如果y的左孩子非空，将 “x” 设为 “y的左孩子的父亲”
@@ -522,11 +533,11 @@ void RBTree<T,INDEX_TYPE,Cap_>::leftRotate(RBTNode<T> *x)
  *       / \                                   / \                   #
  *      lx  rx                                rx  ry
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::rightRotate(RBTNode<T> *y)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::rightRotate(NodeType_ *y)
 {
     // 设置x是当前节点的左孩子。
-    RBTNode<T> *x = leftOf(y);
+    NodeType_ *x = leftOf(y);
 
     // 将 “x的右孩子” 设为 “y的左孩子”；
     // 如果"x的右孩子"不为空的话，将 “y” 设为 “x的右孩子的父亲”
@@ -563,10 +574,10 @@ void RBTree<T,INDEX_TYPE,Cap_>::rightRotate(RBTNode<T> *y)
  *     root 红黑树的根
  *     node 插入的结点    对应《算法导论》中的z
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::insertFixUp(RBTNode<T> *node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::insertFixUp(NodeType_ *node)
 {
-    RBTNode<T> *parent, *gparent;
+    NodeType_ *parent, *gparent;
 
     // 若父节点存在，并且父节点的颜色是红色,根节点是黑色(被插入节点是一定存在非空祖父节点)
     while ((parent = parentOf(node)) && isRed(parent))
@@ -576,7 +587,7 @@ void RBTree<T,INDEX_TYPE,Cap_>::insertFixUp(RBTNode<T> *node)
         if (parent == leftOf(gparent))
         {
             // Case 1：叔叔节点是红色
-            RBTNode<T> *uncle = rightOf(gparent);
+            NodeType_ *uncle = rightOf(gparent);
             if (isRed(uncle))
             {
                 setBlack(parent);//  (01) 将“父节点”设为黑色。
@@ -590,7 +601,7 @@ void RBTree<T,INDEX_TYPE,Cap_>::insertFixUp(RBTNode<T> *node)
                     // Case 2：叔叔是黑色，且当前节点是右孩子
                     if (rightOf(parent) == node)
                     {
-                        RBTNode<T> *tmp;
+                        NodeType_ *tmp;
                         leftRotate(parent);  // (01) 将“父节点”作为“新的当前节点”。 (02) 以“新的当前节点”为支点进行左旋。
                         tmp = parent;
                         parent = node;
@@ -618,7 +629,7 @@ void RBTree<T,INDEX_TYPE,Cap_>::insertFixUp(RBTNode<T> *node)
         else//若父节点是祖父节点的右孩子,将上面的操作中“rightRotate”和“leftRotate”交换位置，然后依次执行。
         {
             // Case 1条件：叔叔节点是红色
-            RBTNode<T> *uncle = leftOf(gparent);
+            NodeType_ *uncle = leftOf(gparent);
             if (isRed(uncle))
             {
                 setBlack(parent); //  (01) 将“父节点”设为黑色。
@@ -632,7 +643,7 @@ void RBTree<T,INDEX_TYPE,Cap_>::insertFixUp(RBTNode<T> *node)
                     // Case 2条件：叔叔是黑色，且当前节点是左孩子
                     if (leftOf(parent) == node)
                     {
-                        RBTNode<T> *tmp;
+                        NodeType_ *tmp;
                         rightRotate(parent);
                         tmp = parent;
                         parent = node;
@@ -669,11 +680,11 @@ void RBTree<T,INDEX_TYPE,Cap_>::insertFixUp(RBTNode<T> *node)
  *     root 红黑树的根结点
  *     node 插入的结点        // 对应《算法导论》中的node
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::insert(RBTNode<T> *node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::insert(NodeType_ *node)
 {
-    RBTNode<T> *parent_node = NULL;
-    RBTNode<T> *tmp_node = getNode(m_Root);
+    NodeType_ *parent_node = NULL;
+    NodeType_ *tmp_node = getNode(m_Root);
 
     //将红黑树当作一颗二叉查找树，将节点添加到二叉查找树中。
     {
@@ -719,10 +730,10 @@ void RBTree<T,INDEX_TYPE,Cap_>::insert(RBTNode<T> *node)
  *     root 红黑树的根
  *     node 待修正的节点
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::removeFixUp(RBTNode<T> *node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::removeFixUp(NodeType_ *node)
 {
-    RBTNode<T> *other;
+    NodeType_ *other;
 
     while (node != getNode(m_Root) && isBlack(node))
     {
@@ -799,10 +810,10 @@ void RBTree<T,INDEX_TYPE,Cap_>::removeFixUp(RBTNode<T> *node)
 }
 
 // 删除修正函数
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::removeFixUp(RBTNode<T> *node,RBTNode<T> *parent)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::removeFixUp(NodeType_ *node, NodeType_ *parent)
 {
-    RBTNode<T> *other;
+    NodeType_ *other;
 
     while ((!node || isBlack(node)) && node != getNode(m_Root))
     {
@@ -892,12 +903,12 @@ void RBTree<T,INDEX_TYPE,Cap_>::removeFixUp(RBTNode<T> *node,RBTNode<T> *parent)
  *     root 红黑树的根结点
  *     node 删除的结点
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::remove(RBTNode<T> *node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
 {
     if(!RB_TREE_JAVA)  //实现方法1  算法导论 https://www.cnblogs.com/skywang12345/p/3624291.html
     {
-        RBTNode<T> *child, *parent;
+        NodeType_ *child, *parent;
         RBTColor color;
 
         // 被删除节点的"左右孩子都不为空"的情况。
@@ -905,7 +916,7 @@ void RBTree<T,INDEX_TYPE,Cap_>::remove(RBTNode<T> *node)
         {
             // 被删节点的后继节点。(称为"取代节点")
             // 用它来取代"被删节点"的位置，然后再将"被删节点"去掉。
-            RBTNode<T> *replace = node;
+            NodeType_ *replace = node;
 
             // 获取后继节点
             replace = rightOf(replace);
@@ -987,12 +998,12 @@ void RBTree<T,INDEX_TYPE,Cap_>::remove(RBTNode<T> *node)
         // 被删除节点的"左右孩子都不为空"的情况。
         if ((leftOf(node) != NULL) && (rightOf(node) != NULL))
         {
-            RBTNode<T>* succNode = successor(node);
+            NodeType_* succNode = successor(node);
             node->set_key(succNode->get_key());
             node = succNode;
         }
 
-        RBTNode<T>* replacement = (leftOf(node) != NULL) ? leftOf(node) : rightOf(node);
+        NodeType_* replacement = (leftOf(node) != NULL) ? leftOf(node) : rightOf(node);
         if(replacement != NULL)
         {
             // Link replacement to parent
@@ -1043,10 +1054,10 @@ void RBTree<T,INDEX_TYPE,Cap_>::remove(RBTNode<T> *node)
  * 参数说明：
  *     tree 红黑树的根结点
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::remove(T key)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(KeyType_ key)
 {
-    RBTNode<T> *node;
+    NodeType_ *node;
 
     // 查找key对应的节点(node)，找到的话就删除该节点
     if ((node = search(getNode(m_Root), key)) != NULL)
@@ -1056,8 +1067,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::remove(T key)
 /*
  * 销毁红黑树
  */
-//template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-//void RBTree<T,INDEX_TYPE,Cap_>::destroy(RBTNode<T> *&tree)
+//template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+//void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::destroy(NODE_TYPE *&tree)
 //{
 //    if (tree == NULL)
 //        return;
@@ -1071,8 +1082,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::remove(T key)
 //    tree = NULL;
 //}
 
-//template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-//void RBTree<T,INDEX_TYPE,Cap_>::destroy()
+//template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+//void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::destroy()
 //{
 //    destroy(mRoot);
 //}
@@ -1085,8 +1096,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::remove(T key)
  *               -1，表示该节点是它的父结点的左孩子;
  *                1，表示该节点是它的父结点的右孩子。
  */
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::print(RBTNode<T> *tree, T key, int direction)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::print(NodeType_ *tree, KeyType_ key, int direction)
 {
     if (tree != NULL) {
         if (direction == 0)    // tree是根节点
@@ -1100,8 +1111,8 @@ void RBTree<T,INDEX_TYPE,Cap_>::print(RBTNode<T> *tree, T key, int direction)
     }
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::getNode(INDEX_TYPE index)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::getNode(INDEX_TYPE index)
 {
     if(index > 0 && index <= Cap_)
     {
@@ -1110,69 +1121,80 @@ RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::getNode(INDEX_TYPE index)
     return NULL;
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-void RBTree<T,INDEX_TYPE,Cap_>::print()
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::print()
 {
     if (getNode(m_Root) != NULL)
         print(getNode(m_Root), getNode(m_Root)->get_key(), 0);
 }
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+bool RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::isEmpty()
+{
+    return m_Root == 0;
+}
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::parentOf(RBTNode<T>* node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+INDEX_TYPE RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::root()
+{
+    return m_Root;
+}
+
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::parentOf(NodeType_* node)
 {
     return  node == NULL ? NULL : getNode(node->get_parent());
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline void *RBTree<T,INDEX_TYPE,Cap_>::setParent(RBTNode<T> *node,RBTNode<T> *parent)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline void *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setParent(NodeType_ *node, NodeType_ *parent)
 {
     if(node)
         node->set_parent(parent == NULL ? 0 : parent->get_cur());
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline RBTColor RBTree<T,INDEX_TYPE,Cap_>::colorOf(RBTNode<T>* node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline RBTColor RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::colorOf(NodeType_* node)
 {
     return RBTColor(node == NULL ? RB_BLACK : node->get_color());
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline bool RBTree<T,INDEX_TYPE,Cap_>::isRed(RBTNode<T>* node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline bool RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::isRed(NodeType_* node)
 {
     return colorOf(node) == RB_RED;
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline bool RBTree<T,INDEX_TYPE,Cap_>::isBlack(RBTNode<T>* node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline bool RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::isBlack(NodeType_* node)
 {
     return colorOf(node) == RB_BLACK;
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline void RBTree<T,INDEX_TYPE,Cap_>::setColor(RBTNode<T>* node,RBTColor color)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setColor(NodeType_* node, RBTColor color)
 {
     if(node != NULL) node->set_color(color);
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline void RBTree<T,INDEX_TYPE,Cap_>::setRed(RBTNode<T>* node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setRed(NodeType_* node)
 {
     setColor(node,RB_RED);
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline void RBTree<T,INDEX_TYPE,Cap_>::setBlack(RBTNode<T>* node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setBlack(NodeType_* node)
 {
     setColor(node,RB_BLACK);
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::leftOf(RBTNode<T>* node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::leftOf(NodeType_* node)
 {
     return node == NULL ? NULL : getNode(node->get_left());
 }
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline void *RBTree<T,INDEX_TYPE,Cap_>::setLeft(RBTNode<T> *node,RBTNode<T> *left)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline void *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setLeft(NodeType_ *node, NodeType_ *left)
 {
     if(node)
     {
@@ -1180,14 +1202,14 @@ inline void *RBTree<T,INDEX_TYPE,Cap_>::setLeft(RBTNode<T> *node,RBTNode<T> *lef
     }
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline RBTNode<T>* RBTree<T,INDEX_TYPE,Cap_>::rightOf(RBTNode<T>* node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::rightOf(NodeType_* node)
 {
     return node == NULL ? NULL : getNode(node->get_right());
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline void RBTree<T,INDEX_TYPE,Cap_>::setRight(RBTNode<T> *node, RBTNode<T> *right)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setRight(NodeType_ *node, NodeType_ *right)
 {
     if(node)
     {
@@ -1195,8 +1217,8 @@ inline void RBTree<T,INDEX_TYPE,Cap_>::setRight(RBTNode<T> *node, RBTNode<T> *ri
     }
 }
 
-template<typename T,typename INDEX_TYPE,std::size_t Cap_>
-inline INDEX_TYPE RBTree<T,INDEX_TYPE,Cap_>::curOf(RBTNode<T> *node)
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline INDEX_TYPE RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::curOf(NodeType_ *node)
 {
     return node == NULL ? 0 : node->get_cur();
 }

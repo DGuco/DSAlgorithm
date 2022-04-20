@@ -18,14 +18,14 @@ namespace rbt_hash
 /**
  *迭代器class
 * */
-template<typename ClassType_>
+template<typename KeyType_,typename ValueType_,typename IndexType_>
 class node_list_iterator
 {
 public:
-    typedef RBTNode<ClassType_> node_type;
-    typedef node_list_iterator<ClassType_> iterator_type;
-    typedef ClassType_ *pointer;
-    typedef ClassType_ &reference;
+    typedef RBTNode<KeyType_,ValueType_,IndexType_> node_type;
+    typedef node_list_iterator<KeyType_,ValueType_,IndexType_> iterator_type;
+    typedef std::pair<KeyType_,ValueType_> *pointer;
+    typedef std::pair<KeyType_,ValueType_> &reference;
 
     node_list_iterator(const iterator_type &other)
         : ptr_(other.ptr_), array_(other.array_), size_(other.size_)
@@ -111,14 +111,16 @@ private:
 /**
  * 内存管理器
  */
-template<typename ClassType_,typename IndexType_,std::size_t Cap_ = 0>
+template<class KeyType_, class ValueType_,typename IndexType_,std::size_t Cap_ = 0>
 class node_pool
 {
 public:
-    typedef RBTNode<ClassType_, IndexType_> node_type;
-    typedef node_list_iterator<ClassType_> iterator;
+    typedef RBTNode<KeyType_,ValueType_,IndexType_> node_type;
+    typedef RBTree<KeyType_,ValueType_,IndexType_,Cap_> tree_type;
+    typedef node_list_iterator<KeyType_,ValueType_,IndexType_> iterator;
+    typedef std::pair<KeyType_,ValueType_> ClassType_;
     typedef ClassType_ *pointer;
-    typedef const ClassType_ *const_pointer;
+    typedef const ClassType_  *const_pointer;
     typedef ClassType_ &reference;
     typedef const ClassType_ &const_reference;
 
@@ -138,13 +140,13 @@ public:
     void clear()
     {
         //构造空闲链表信息
-        node_array_[0].clear_list();
+        node_array_[0].clear();
         node_array_[0].set_cur(0 + 1/*真正的索引+1*/);
         //设置前向节点为空
         node_array_[0].set_prev(0);
         for (IndexType_ i = 1; i < Cap_; i++) {
             node_array_[i - 1].set_next(i + 1/*真正的索引+1*/);
-            node_array_[i].clear_list();
+            node_array_[i].clear();
             node_array_[i].set_prev(i - 1 + 1/*真正的索引+1*/);
             node_array_[i].set_cur(i + 1/*真正的索引+1*/);
         }
@@ -174,10 +176,10 @@ public:
     {
         node_type *p = allocate(v);
         if (p) {
-            //插入到头结点
-            insert_head(get_node(used_node_head_), p);
-            //更新头结点索引
-            used_node_head_ = p->get_cur();
+//            //插入到头结点
+//            insert_head(get_node(used_node_head_), p);
+//            //更新头结点索引
+//            used_node_head_ = p->get_cur();
             return p;
         }
         return 0;
@@ -187,10 +189,10 @@ public:
     {
         node_type *p = allocate();
         if (p) {
-            //插入到头结点
-            insert_head(get_node(used_node_head_), p);
-            //更新头结点索引
-            used_node_head_ = p->get_cur();
+//            //插入到头结点
+//            insert_head(get_node(used_node_head_), p);
+//            //更新头结点索引
+//            used_node_head_ = p->get_cur();
             return p;
         }
         return 0;
@@ -201,10 +203,10 @@ public:
     {
         node_type *p = allocate(v);
         if (p) {
-            //插入到结点
-            insert_node(next_node, p);
-            //更新头结点索引
-            used_node_head_ = p->get_cur();
+//            //插入到结点
+//            insert_node(next_node, p);
+//            //更新头结点索引
+//            used_node_head_ = p->get_cur();
             return p;
         }
         return 0;
@@ -214,10 +216,10 @@ public:
     {
         node_type *p = allocate();
         if (p) {
-            //插入到结点
-            insert_node(insert_node, p);
-            //更新头结点索引
-            used_node_head_ = p->get_cur();
+//            //插入到结点
+//            insert_node(insert_node, p);
+//            //更新头结点索引
+//            used_node_head_ = p->get_cur();
             return p;
         }
         return 0;
@@ -225,22 +227,22 @@ public:
 
     void deallocate_node(node_type *node_)
     {
-        node_type *node_head = get_node(used_node_head_);
-        //当前节点是头结点
-        if (node_ == node_head) {
-            node_type *new_head = delete_head(node_);
-            //更新头结点信息
-            if (new_head) {
-                used_node_head_ = new_head->get_cur();
-            }
-            else //链表删空了
-            {
-                used_node_head_ = -1;
-            }
-        }
-        else {
-            delete_node(node_);
-        }
+//        node_type *node_head = get_node(used_node_head_);
+//        //当前节点是头结点
+//        if (node_ == node_head) {
+//            node_type *new_head = delete_head(node_);
+//            //更新头结点信息
+//            if (new_head) {
+//                used_node_head_ = new_head->get_cur();
+//            }
+//            else //链表删空了
+//            {
+//                used_node_head_ = -1;
+//            }
+//        }
+//        else {
+//            delete_node(node_);
+//        }
         //回收内存空间
         deallocate(node_);
     }
@@ -254,22 +256,26 @@ public:
         return NULL;
     }
 
-    iterator make_iteator(std::size_t index)
+    tree_type make_rbtree(std::size_t root)
     {
-        return iterator(get_node(index), node_array_, Cap_);
+        return tree_type(node_array_,root);
     }
 
-    // 下面为访问已经分配对象的iterator
-    iterator begin()
+    iterator make_iterator(node_type *node)
     {
-        if (used_node_head_ != -1) {
-            return iterator(get_node(used_node_head_), node_array_, Cap_);
-        }
-        else {
-            return end();
-        }
+        return iterator(node,node_array_,Cap_);
     }
-
+//    // 下面为访问已经分配对象的iterator
+//    iterator begin()
+//    {
+//        if (used_node_head_ != -1) {
+//            return iterator(get_node(used_node_head_), node_array_, Cap_);
+//        }
+//        else {
+//            return end();
+//        }
+//    }
+//
     iterator end()
     {
         return iterator();
@@ -279,19 +285,23 @@ private:
     //申请空间
     node_type *allocate(const ClassType_ &v)
     {
-        if (size_ >= Cap_) {
+        if (size_ >= Cap_)
+        {
             return 0;
         }
         node_type *p = get_node(free_node_head_);
-        if (p) {
+        if (p)
+        {
             size_++;
             //先把空闲头结点指向当前空闲头结点的下一个节点
             free_node_head_ = p->get_next();
             //call c++ placement new
-            new(p->date()) ClassType_(v);
+            new(p->data()) ClassType_(v);
+            p->clear_rb();
             return p;
         }
-        else {
+        else
+        {
             return NULL;
         }
     }
@@ -299,22 +309,24 @@ private:
     //申请空间
     node_type* allocate()
     {
-        if (size_ >= Cap_) {
+        if (size_ >= Cap_)
+        {
             return NULL;
         }
-        else {
-            node_type *p = get_node(free_node_head_);
-            if (p) {
-                size_++;
-                //先把空闲头结点指向当前空闲头结点的下一个节点
-                free_node_head_ = p->get_next();
-                //call c++ placement new
-                new(p->data()) ClassType_();
-                return p;
-            }
-            else {
-                return NULL;
-            }
+        node_type *p = get_node(free_node_head_);
+        if (p)
+        {
+            size_++;
+            //先把空闲头结点指向当前空闲头结点的下一个节点
+            free_node_head_ = p->get_next();
+            //call c++ placement new
+            new(p->data()) ClassType_();
+            p->clear_rb();
+            return p;
+        }
+        else
+        {
+            return NULL;
         }
     }
 
@@ -325,51 +337,41 @@ private:
         }
         //调用析构函数
         node_->value().~CLASS_TYPE();
+        free_node_head_ = node_->get_cur();
         //插入空闲链表头部
-        insert_head(get_node(free_node_head_), node_);
-    }
-
-    //插入一个节点到链表头部
-    void insert_head(node_type *old_head, node_type *new_head)
-    {
-        if (old_head) {
-            if (new_head) {
-                //老的头结点前指针指向新的头结点
-                old_head->set_prev(new_head->get_cur());
-                //新的头结点后指针指向老的的头节点
-                new_head->set_next(old_head->get_cur());
-                //新的头结点前指针置为0
-                new_head->set_prev(0);
-            }
-        }
-        else {
-            if (new_head) {
-                new_head->dis_from_list();
-            }
-        }
+        insert_node(get_node(free_node_head_), node_);
     }
 
     //插入一个节点到指定节点前
-    void insert_node(node_type *tar_node, node_type *src_node)
+    void insert_node(node_type *tar_node, node_type *new_head)
     {
-        if (tar_node == 0 || src_node == 0) {
+        if (new_head == NULL)
+        {
             return;
         }
-        int tar_prev = tar_node->get_prev();
-        node_type *tar_prev_node = get_node(tar_prev);
-        //有前节点
-        if (tar_prev_node) {
-            //目标节点前指针指向要插入的节点
-            tar_prev_node->set_next(src_node->get_cur());
-            //要插入的节点前指针指向tar_prev_node
-            src_node->set_prev(tar_prev_node->get_cur());
+        if(tar_node)
+        {
+            int tar_prev = tar_node->get_prev();
+            node_type *tar_prev_node = get_node(tar_prev);
+            //有前节点
+            if (tar_prev_node)
+            {
+                //目标节点前指针指向要插入的节点
+                tar_prev_node->set_next(new_head->get_cur());
+                //要插入的节点前指针指向tar_prev_node
+                new_head->set_prev(tar_prev_node->get_cur());
+            }
+            else
+            {
+                //要插入的节点前指针置为0
+                new_head->set_prev(0);
+            }
+            tar_node->set_prev(new_head->get_cur());
+            new_head->set_next(tar_node->get_cur());
+        }else
+        {
+            new_head->dis_from_list();
         }
-        else {
-            //要插入的节点前指针置为0
-            src_node->set_prev(0);
-        }
-        tar_node->set_prev(src_node->get_cur());
-        src_node->set_next(tar_node->get_cur());
     }
 
     //删除头结点，返回新的头结点

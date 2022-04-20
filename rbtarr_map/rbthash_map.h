@@ -15,7 +15,7 @@ using namespace std;
 
 namespace rbt_hash
 {
-template <class KeyType_, class ValueType_, std::size_t _Cap = 666666666>
+template <class KeyType_, class ValueType_, std::size_t _Cap = 100>
 class RbtHashMap
 {
 public:
@@ -26,13 +26,11 @@ public:
 #else
     typedef unsigned long long IndexType_;
 #endif
-    typedef std::pair<KeyType_, ValueType_> value_type;
-    typedef node_pool<value_type, IndexType_, _Cap> hash_array;
-
+    typedef node_pool<KeyType_,ValueType_,IndexType_, _Cap> hash_array;
+    typedef typename hash_array::tree_type tree_type;
+    typedef typename hash_array::ClassType_ value_type;
     typedef typename hash_array::iterator iterator;
-    typedef typename hash_array::const_iterator const_iterator;
     typedef typename hash_array::reference reference;
-    typedef typename hash_array::const_reference const_reference;
     typedef typename hash_array::node_type node_type;
 
     iterator begin()
@@ -41,16 +39,6 @@ public:
     }
 
     iterator end()
-    {
-        return hash_array_.end();
-    }
-
-    const_iterator begin() const
-    {
-        return hash_array_.begin();
-    }
-
-    const_iterator end() const
     {
         return hash_array_.end();
     }
@@ -70,10 +58,9 @@ public:
         hash_function::hash<KeyType_> hash_func;
         std::size_t bucket = hash_func(v.first) % _Cap;
 
-        iterator it_begin = hash_array_.make_iteator(buckets_[bucket].root_);
-
+        tree_type rb_tree = hash_array_.make_rbtree(buckets_[bucket].root_);
         //该bucket是空的
-        if ( it_begin == this->end())
+        if ( rb_tree.isEmpty())
         {
             //申请一个节点
             node_type* new_node = hash_array_.allocate_node(v);
@@ -81,35 +68,27 @@ public:
             {
                 return false;
             }
+            rb_tree.insert(new_node);
             //设置链表头和尾
-            buckets_[bucket].root_ = buckets_[bucket].minson_ = new_node->get_cur();
+            buckets_[bucket].root_ = buckets_[bucket].lastson_ = new_node->get_cur();
             return true;
         }
 
-        //hash冲突
-        iterator it_end  = hash_array_.make_iteator(buckets_[bucket].minson_);
-        ++it_end;
-
-        //检查是否存在改key的元素
-        while ( it_begin != it_end )
-        {
-            //该key对应的元素已经存在，插入失败
-            if (it_begin->first == v.first)
-            {
-                return false;
-            }
-            ++it_begin;
-        }
-
-        //申请一个节点
-        node_type* new_node = hash_array_.allocate_node(v,hash_array_.get_node(buckets_[bucket].root_));
-        if( !new_node )
+        if(rb_tree.search(v.first) != NULL)
         {
             return false;
         }
 
+        //申请一个节点
+        node_type* new_node = hash_array_.allocate_node(v,hash_array_.get_node(buckets_[bucket].root_));
+        value_type value = new_node->value();
+        if( !new_node )
+        {
+            return false;
+        }
+        rb_tree.insert(new_node);
         //更新头结点信息
-        buckets_[bucket].root_ = new_node->get_cur();
+        buckets_[bucket].root_ = rb_tree.root();
         return true;
     }
 
@@ -123,54 +102,13 @@ public:
         hash_function::hash<KeyType_> hash_func;
         std::size_t bucket = hash_func(k) % _Cap;
 
-        iterator it_begin = hash_array_.make_iteator(buckets_[bucket].root_);
-
-        if ( it_begin == this->end() )
+        tree_type rb_tree = hash_array_.make_rbtree(buckets_[bucket].root_);
+        //该bucket是空的
+        if ( rb_tree.isEmpty())
         {
             return this->end();
         }
-
-        iterator it_end  = hash_array_.make_iteator(buckets_[bucket].minson_);
-        ++it_end;
-
-        while ( it_begin != it_end )
-        {
-            if ( it_begin->first == k )
-            {
-                return it_begin;
-            }
-
-            ++it_begin;
-        }
-        return this->end();
-    }
-
-    const_iterator find(const KeyType_& k) const
-    {
-        hash_function::hash<KeyType_> hash_func;
-        std::size_t bucket = hash_func(k) % _Cap;
-
-        const_iterator it_begin = hash_array_.make_const_iteator(buckets_[bucket].root_);
-
-        if ( it_begin == this->end() )
-        {
-            return this->end();
-        }
-
-        const_iterator it_end  = hash_array_.make_const_iteator(buckets_[bucket].minson_);
-        ++it_end;
-
-        while ( it_begin != it_end )
-        {
-            if ( it_begin->first == k )
-            {
-                return it_begin;
-            }
-
-            ++it_begin;
-        }
-
-        return this->end();
+        return hash_array_.make_iterator(rb_tree.search(k));
     }
 
     void erase( iterator it )
@@ -182,25 +120,14 @@ public:
         hash_function::hash<KeyType_> hash_func;
         std::size_t bucket = hash_func(it->first) % _Cap;
 
-        iterator it_begin = hash_array_.make_iteator(buckets_[bucket].root_);
-        iterator it_end = hash_array_.make_iteator(buckets_[bucket].minson_);
-
-        //hash链表只有自己
-        if ( it == it_begin && it == it_end )
+        tree_type rb_tree = hash_array_.make_rbtree(buckets_[bucket].root_);
+        //该bucket是空的
+        if ( rb_tree.isEmpty())
         {
-            buckets_[bucket].root_ = buckets_[bucket].minson_ = -1;
+            return;
         }
-        else if (  it == it_begin ) //hrash链表自己是头
-        {
-            ++ it_begin;
-            buckets_[bucket].root_ = hash_array_.get_node(hash_array_.get_node(buckets_[bucket].root_)->get_next())->get_cur();
-        }
-        else if ( it == it_end )//hash链表自己是尾
-        {
-            -- it_end;
-            buckets_[bucket].minson_ = hash_array_.get_node(hash_array_.get_node(buckets_[bucket].minson_)->get_prev())->get_cur();
-        }
-
+        rb_tree.remove(it);
+        buckets_[bucket].root_ = rb_tree.root();
         hash_array_.deallocate_node( &*it);
     }
 
@@ -215,7 +142,7 @@ public:
         for( IndexType_ t = 0; t < _Cap; ++t )
         {
             buckets_[t].root_ = 0;
-            buckets_[t].minson_ = 0;
+            buckets_[t].lastson_ = 0;
         }
         hash_array_.clear();
     }
@@ -230,7 +157,7 @@ private:
     struct bucket_type
     {
         IndexType_ root_;  			    //相同bucket rbtree根节点索引
-        IndexType_ minson_;  			//相同bucket rbtree最小节点索引
+        IndexType_ lastson_;  			//相同bucket rbtree最小节点索引
     };
 
     bucket_type		buckets_[_Cap];     //bucket array
