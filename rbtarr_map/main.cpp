@@ -19,10 +19,6 @@ using namespace rbt_hash;
 void testRBTree()
 {
     RBTNode<int,int> nodeArr[10];
-    for(int index = 0;index < 10;index++)
-    {
-        nodeArr->set_cur(index + 1);
-    }
     int a[]= {10, 40, 30, 60, 90, 70, 20, 50, 80};
     int check_insert=1;    // "插入"动作的检测开关(0，关闭；1，打开)
     int check_remove=1;    // "删除"动作的检测开关(0，关闭；1，打开)
@@ -34,7 +30,6 @@ void testRBTree()
     for(i=0; i<ilen; i++)
     {
         cout << a[i] <<" ";
-        nodeArr[i].set_cur(i + 1);
         nodeArr[i].set_key(a[i]);
     }
     cout << endl;

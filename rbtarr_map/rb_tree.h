@@ -15,6 +15,8 @@ using namespace std;
 
 #define RB_TREE_JAVA 1
 #define DEBUG_RB_TREE 1
+#define NodeType_ RBTNode<KeyType_,ValueType_,INDEX_TYPE>
+#define ARRAY_OFFSET(array,node) (node - array + 1)   //这里取真实的索引+1作为数组索引[1,Cap_]
 
 enum RBTColor
 {
@@ -59,9 +61,6 @@ public:
         color_ = RB_NONE;
         memset(data_,0,sizeof(NodeDataType_));
     }
-
-    inline void set_cur(INDEX_TYPE value)    { cur_ = value;}
-    inline INDEX_TYPE  get_cur()             { return cur_;}
 
     inline void set_prev(INDEX_TYPE value)   { left_ = value;}
     inline INDEX_TYPE  get_prev()            { return left_;}
@@ -110,14 +109,12 @@ public:
     {}
 private:
     char                                data_[sizeof(NodeDataType_)];  //节点对象信息
-    INDEX_TYPE                          cur_;                          //当前节点在数组中的索引位置+1
     INDEX_TYPE                          parent_;                       //父亲节点在数组中的索引位置+1
     INDEX_TYPE                          left_;                         //左子节点在数组中的索引位置+1
     INDEX_TYPE                          right_;                        //右子节点在数组中的索引位置+1
     unsigned  char                      color_;                        //节点color
 };
 
-#define NodeType_ RBTNode<KeyType_,ValueType_,INDEX_TYPE>
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE = unsigned int,std::size_t Cap_ = 0>
 class RBTree
 {
@@ -1150,7 +1147,7 @@ template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t C
 inline void *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setParent(NodeType_ *node, NodeType_ *parent)
 {
     if(node)
-        node->set_parent(parent == NULL ? 0 : parent->get_cur());
+        node->set_parent(parent == NULL ? 0 : curOf(parent));
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
@@ -1199,7 +1196,7 @@ inline void *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setLeft(NodeType_ *nod
 {
     if(node)
     {
-        node->set_left(left == NULL ? 0 : left->get_cur());
+        node->set_left(left == NULL ? 0 : (curOf(left)));
     }
 }
 
@@ -1214,14 +1211,14 @@ inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setRight(NodeType_ *nod
 {
     if(node)
     {
-        node->set_right(right == NULL ? 0 : right->get_cur());
+        node->set_right(right == NULL ? 0 : curOf(right));
     }
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
 inline INDEX_TYPE RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::curOf(NodeType_ *node)
 {
-    return node == NULL ? 0 : node->get_cur();
+    return node == NULL ? 0 : ARRAY_OFFSET(m_Pool,node);
 }
 
 

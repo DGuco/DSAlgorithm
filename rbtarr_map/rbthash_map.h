@@ -70,7 +70,7 @@ public:
             }
             rb_tree.insert(new_node);
             //设置链表头和尾
-            buckets_[bucket].root_ = buckets_[bucket].lastson_ = rb_tree.root();
+            buckets_[bucket].root_ = buckets_[bucket].minson_ = buckets_[bucket].maxson_ = rb_tree.root();
             return true;
         }
 
@@ -138,9 +138,11 @@ public:
         for( IndexType_ t = 0; t < _Cap; ++t )
         {
             buckets_[t].root_ = 0;
-            buckets_[t].lastson_ = 0;
+            buckets_[t].minson_ = 0;
+            buckets_[t].maxson_ = 0;
         }
         hash_array_.clear();
+        printf("========= map index size = %d\n",sizeof(IndexType_));
     }
 
     RbtHashMap() {clear();}
@@ -153,7 +155,8 @@ private:
     struct bucket_type
     {
         IndexType_ root_;  			    //相同bucket rbtree根节点索引
-        IndexType_ lastson_;  			//相同bucket rbtree最小节点索引
+        IndexType_ minson_;  			//相同bucket rbtree最小节点索引
+        IndexType_ maxson_;  			//相同bucket rbtree最大节点索引
     };
 
     bucket_type		buckets_[_Cap];     //bucket array
