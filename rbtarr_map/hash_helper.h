@@ -324,7 +324,7 @@ private:
             free_node_head_ = p->get_next();
             //call c++ placement new
             new(p->data()) class_type(v);
-            p->clear_rb();
+            p->init_rb();
             return p;
         }
         else
@@ -348,7 +348,7 @@ private:
             free_node_head_ = p->get_next();
             //call c++ placement new
             new(p->data()) class_type();
-            p->clear_rb();
+            p->init_rb();
             return p;
         }
         else

@@ -73,21 +73,73 @@ public:
             buckets_[bucket].root_ = buckets_[bucket].minson_ = buckets_[bucket].maxson_ = rb_tree.root();
             return true;
         }
-
-        if(rb_tree.search(v.first) != NULL)
+        node_type* old_node = rb_tree.search(v.first);
+        if(old_node != NULL)
         {
-            return false;
+            //如果存在则更新旧值返回成功
+            old_node->value().second = v.second;
+            return true;
         }
 
         //申请一个节点
         node_type* new_node = hash_array_.allocate_node(v,hash_array_.get_node(buckets_[bucket].root_));
-        class_type value = new_node->value();
         if( !new_node )
         {
             return false;
         }
+        //先记录并清除对应的前后的rbtree的信息，插入新节点后，该信息可能丢失
+        IndexType_  preRoot = 0;
+        IndexType_  nextRoot = 0;
+        node_type* oldmin_node = NULL;
+        node_type* oldmax_node = NULL;
+        {
+            oldmin_node = hash_array_.get_node(buckets_[bucket].minson_);
+            if(oldmin_node != NULL)
+            {
+                preRoot = oldmin_node->get_left();
+                rb_tree.setLeft(oldmin_node,NULL);
+                rb_tree.setRbColor(oldmin_node,rb_tree.rbColorOf(oldmin_node));
+            }
+            oldmax_node = hash_array_.get_node(buckets_[bucket].maxson_);
+            if(oldmax_node != NULL)
+            {
+                nextRoot = oldmax_node->get_right();
+                rb_tree.setRight(oldmax_node,NULL);
+                rb_tree.setRbColor(oldmax_node,rb_tree.rbColorOf(oldmax_node));
+            }
+        }
+
+        //把新节点插入红黑树
         rb_tree.insert(new_node);
-        //更新头结点信息
+        if(oldmin_node != NULL)
+        {
+            if(new_node->value().first < oldmin_node->value().first)
+            {
+                new_node->set_left(preRoot);
+                new_node->set_color((RBTColor)(RB_MIN_NODE | new_node->get_color()));
+                buckets_[bucket].minson_ = hash_array_.get_cur(new_node);
+            }else
+            {
+                oldmin_node->set_left(preRoot);
+                oldmin_node->set_color((RBTColor)(RB_MIN_NODE | oldmin_node->get_color()));
+            }
+        }
+
+        if(oldmax_node != NULL)
+        {
+            if(new_node->value().first > oldmax_node->value().first)
+            {
+                new_node->set_right(nextRoot);
+                new_node->set_color((RBTColor)(RB_MAX_NODE | new_node->get_color()));
+                buckets_[bucket].maxson_ = hash_array_.get_cur(new_node);
+            }else
+            {
+                oldmax_node->set_right(nextRoot);
+                oldmax_node->set_color((RBTColor)(RB_MAX_NODE | oldmax_node->get_color()));
+            }
+        }
+
+        //更新最小节点结点信息
         buckets_[bucket].root_ = rb_tree.root();
         return true;
     }
