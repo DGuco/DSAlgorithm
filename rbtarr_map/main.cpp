@@ -111,6 +111,8 @@ int main()
     {
         testMap->insert(i * HASH_CONFLICT_RATE,ValueType(i * HASH_CONFLICT_RATE));
     }
+    testMap->insert(9999999999,ValueType(999999999));
+
     RbtHashMap<int,ValueType,TEST_COUNT>::iterator it = testMap->begin();
     for(;it != testMap->end();it++)
     {
