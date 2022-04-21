@@ -109,15 +109,18 @@ public:
             {
                 rbtree.inOrder(nodelist_);
             }
-            if(nodelist_.size() > 0)
+        }
+        if(nodelist_.size() > 0)
+        {
+            curnode_ = nodelist_.front();
+            nodelist_.pop_front();
+            if(nodelist_.size() == 0)
             {
-                curnode_ = nodelist_.front();
-                nodelist_.pop_front();
-                if(nodelist_.size() == 0)
-                {
-                    root_ = curnode_->get_right();
-                }
+                root_ = curnode_->get_right();
             }
+        }else
+        {
+            curnode_ = NULL;
         }
     }
 private:
@@ -171,7 +174,7 @@ public:
         node_array_[Cap_ - 1].set_next(0);
         size_ = 0;
         //已用的节点链表头节点的索引
-        used_node_head_root_ = 0;
+        rb_tree_head_root_ = 0;
         //默认数组首个元素即可用节点链表的头结点
         free_node_head_ = 1;
     }
@@ -192,24 +195,8 @@ public:
     node_type *allocate_node(const class_type &v)
     {
         node_type *p = allocate(v);
-        if (p) {
-//            //插入到头结点
-//            insert_head(get_node(used_node_head_), p);
-//            //更新头结点索引
-//            used_node_head_ = p->get_cur();
-            return p;
-        }
-        return 0;
-    }
-
-    node_type *allocate_node()
-    {
-        node_type *p = allocate();
-        if (p) {
-//            //插入到头结点
-//            insert_head(get_node(used_node_head_), p);
-//            //更新头结点索引
-//            used_node_head_ = p->get_cur();
+        if (p)
+        {
             return p;
         }
         return 0;
@@ -220,23 +207,6 @@ public:
     {
         node_type *p = allocate(v);
         if (p) {
-//            //插入到结点
-//            insert_node(next_node, p);
-//            //更新头结点索引
-//            used_node_head_ = p->get_cur();
-            return p;
-        }
-        return 0;
-    }
-
-    node_type *allocate_node(node_type *insert_node)
-    {
-        node_type *p = allocate();
-        if (p) {
-//            //插入到结点
-//            insert_node(insert_node, p);
-//            //更新头结点索引
-//            used_node_head_ = p->get_cur();
             return p;
         }
         return 0;
@@ -244,22 +214,6 @@ public:
 
     void deallocate_node(node_type *node_)
     {
-//        node_type *node_head = get_node(used_node_head_);
-//        //当前节点是头结点
-//        if (node_ == node_head) {
-//            node_type *new_head = delete_head(node_);
-//            //更新头结点信息
-//            if (new_head) {
-//                used_node_head_ = new_head->get_cur();
-//            }
-//            else //链表删空了
-//            {
-//                used_node_head_ = -1;
-//            }
-//        }
-//        else {
-//            delete_node(node_);
-//        }
         //回收内存空间
         deallocate(node_);
     }
@@ -292,17 +246,27 @@ public:
     {
         return iterator(node);
     }
-//    // 下面为访问已经分配对象的iterator
-//    iterator begin()
-//    {
-//        if (used_node_head_ != -1) {
-//            return iterator(get_node(used_node_head_), node_array_, Cap_);
-//        }
-//        else {
-//            return end();
-//        }
-//    }
-//
+
+    void set_rb_tree_head_root(IndexType_ value)
+    {
+        rb_tree_head_root_ = value;
+    }
+
+    IndexType_ rb_tree_head_root()
+    {
+        return rb_tree_head_root_;
+    }
+    // 下面为访问已经分配对象的iterator
+    iterator begin()
+    {
+        if (rb_tree_head_root_ != 0) {
+            return iterator(rb_tree_head_root_, node_array_);
+        }
+        else {
+            return end();
+        }
+    }
+
     iterator end()
     {
         return iterator();
@@ -440,7 +404,7 @@ private:
     }
 private:
     IndexType_ size_;                            //内存池已用数量
-    IndexType_ used_node_head_root_;             //已用的节点链表头节点的索引
+    IndexType_ rb_tree_head_root_;               //红黑树链的头的根节点索引
     IndexType_ free_node_head_;                  //空闲的节点链表头节点的索引
     node_type  node_array_[Cap_];
 };

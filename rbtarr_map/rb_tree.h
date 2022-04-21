@@ -14,7 +14,7 @@
 using namespace std;
 
 #define RB_TREE_JAVA 1
-#define DEBUG_RB_TREE 1
+#define DEBUG_RB_TREE 0
 #define NodeType_ RBTNode<KeyType_,ValueType_,INDEX_TYPE>
 #define ARRAY_OFFSET(array,node) (node - array + 1)   //这里取真实的索引+1作为数组索引[1,Cap_]
 
@@ -139,9 +139,9 @@ public:
     // (非递归实现)查找"红黑树"中键值为key的节点
     NodeType_ *iterativeSearch(KeyType_ key);
     // 查找最小结点：返回最小结点的键值。
-    KeyType_ minimum();
+    NodeType_ * minimum();
     // 查找最大结点：返回最大结点的键值。
-    KeyType_ maximum();
+    NodeType_ * maximum();
     // 找结点(x)的后继结点。即，查找"红黑树中数据值大于该结点"的"最小结点"。
     NodeType_ *successor(NodeType_ *x);
     // 找结点(x)的前驱结点。即，查找"红黑树中数据值小于该结点"的"最大结点"。
@@ -400,13 +400,13 @@ NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::minimum(NodeType_ *tree)
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-KeyType_ RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::minimum()
+NodeType_ * RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::minimum()
 {
     NodeType_ *p = minimum(getNode(m_Root));
     if (p != NULL)
-        return p->get_key();
+        return p;
 
-    return (KeyType_) NULL;
+    return NULL;
 }
 
 /*
@@ -424,13 +424,12 @@ NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::maximum(NodeType_ *tree)
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-KeyType_ RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::maximum()
+NodeType_ * RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::maximum()
 {
     NodeType_ *p = maximum(getNode(m_Root));
     if (p != NULL)
-        return p->get_key();
-
-    return (KeyType_) NULL;
+        return p;
+    return NULL;
 }
 
 /*
@@ -817,15 +816,10 @@ NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
         else
             setRight(parentOf(node), replacement);
 
-        // Null out links so they are OK to use by fixAfterDeletion.
-        setLeft(node,NULL);
-        setRight(node,NULL);
-        setParent(node,NULL);
         // Fix replacement
         if (isBlack(node))
             removeFixUp(replacement);
 
-        node->clear_rb();
     }else if(parentOf(node) == NULL)//如果要删除的节点没有父节点，则删除的节点是根节点,直接把根节点清掉返回
     {
         m_Root = 0;
@@ -848,6 +842,7 @@ NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
             setParent(node,NULL);
         }
     }
+    node->clear_rb();
     return node;
 }
 
@@ -1006,7 +1001,7 @@ inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::leftOf(NodeType_*
 {
     if(node == NULL) return NULL;
     //如果是最小节点，则左子树为空(实际上不为空，为了方便遍历hash_map，左子树指向了hash_map红黑树链的前一个树的root节点)
-    if(node->get_color() & RB_MIN_NODE) return  NULL;
+    if(node->get_color() == RB_NONE || node->get_color() & RB_MIN_NODE) return  NULL;
     return getNode(node->get_left());
 }
 
@@ -1024,7 +1019,7 @@ inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::rightOf(NodeType_
 {
     if(node == NULL) return  NULL;
     //如果是最大节点，则左子树为空(实际上不为空，为了方便遍历hash_map，左子树指向了hash_map红黑树链的下一个树的root节点)
-    if(node->get_color() & RB_MAX_NODE) return  NULL;
+    if(node->get_color() == RB_NONE || node->get_color() & RB_MAX_NODE) return  NULL;
     return getNode(node->get_right());
 }
 
