@@ -15,6 +15,7 @@
 
 namespace rbt_hash
 {
+
 /**
  *迭代器class
 * */
@@ -23,37 +24,47 @@ class node_list_iterator
 {
 public:
     typedef RBTree<KeyType_,ValueType_,IndexType_,Cap_> tree_type;
-    typedef RBTNode<KeyType_,ValueType_,IndexType_> node_type;
+    typedef RBTNode<KeyType_,IndexType_> node_type;
     typedef node_list_iterator<KeyType_,ValueType_,IndexType_,Cap_> iterator_type;
-    typedef std::pair<KeyType_,ValueType_> *pointer;
-    typedef std::pair<KeyType_,ValueType_> &reference;
+    typedef std::pair<KeyType_,ValueType_*> *pointer;
+    typedef std::pair<KeyType_,ValueType_*> &reference;
 
     node_list_iterator(const iterator_type &other)
-        : root_(other.root_), array_(other.array_),nodelist_(other.nodelist_),curnode_(other.curnode_)
+        : root_(other.root_), array_(other.array_),data_array_(other.data_array_),nodelist_(other.nodelist_),curnode_(other.curnode_)
     {}
 
-    explicit node_list_iterator(IndexType_ proot_, node_type *parray_)
-        : root_(proot_), array_(parray_),curnode_(NULL)
+    explicit node_list_iterator(IndexType_ proot_, node_type *parray_,ValueNode<ValueType_>* pdata_)
+        : root_(proot_), array_(parray_),data_array_(pdata_),curnode_(NULL)
     {
         look_rbtree();
     }
 
     explicit node_list_iterator(node_type* node)
-        : root_(NULL), array_(NULL),curnode_(node)
+        : root_(NULL), array_(NULL),data_array_(NULL),curnode_(node)
     {
         look_rbtree();
     }
 
     node_list_iterator()
-        : root_(0), array_(NULL),curnode_(NULL)
+        : root_(0), array_(NULL),data_array_(NULL),curnode_(NULL)
     {}
 
-    reference operator*() const
+    reference operator*()
     {
-        return curnode_->value();
+        IndexType_ index = get_cur();
+        if(index >= 0 && index <= Cap_)
+        {
+            iteator_.first = curnode_->get_key();
+            iteator_.second = data_array_[index - 1].pointer();
+        }else
+        {
+            iteator_.first = curnode_->get_key();
+            iteator_.second = NULL;
+        }
+        return iteator_;
     }
 
-    pointer operator->() const
+    pointer operator->()
     {
         return &(operator*());
     }
@@ -92,10 +103,19 @@ public:
         return *this;
     }
 
-    node_type *get_node(std::size_t index)
+    node_type *get_node(std::size_t index) const
     {
         if (index > 0 && index <= Cap_) {
             return &array_[index - 1];
+        }
+        return 0;
+    }
+
+    IndexType_ get_cur() const
+    {
+        if(curnode_)
+        {
+            return ARRAY_OFFSET(array_,curnode_);
         }
         return 0;
     }
@@ -104,7 +124,7 @@ public:
     {
         if(nodelist_.size() <= 0)
         {
-            tree_type rbtree(array_,root_);
+            tree_type rbtree(array_,data_array_,root_);
             if(!rbtree.isEmpty())
             {
                 rbtree.inOrder(nodelist_);
@@ -124,10 +144,12 @@ public:
         }
     }
 private:
-    IndexType_  root_;                //红黑树的根节点
-    node_type   *array_;              //节点所属的数组
-    std::list<node_type*> nodelist_;   //
-    node_type   *curnode_;            //节点
+    IndexType_                      root_;                //红黑树的根节点
+    node_type                       *array_;              //节点所属的数组
+    ValueNode<ValueType_>*          data_array_;
+    std::list<node_type*>           nodelist_;   //
+    std::pair<KeyType_,ValueType_*> iteator_;
+    node_type                       *curnode_;            //节点
 };
 
 /**
@@ -137,7 +159,7 @@ template<class KeyType_, class ValueType_,typename IndexType_,std::size_t Cap_ =
 class node_pool
 {
 public:
-    typedef RBTNode<KeyType_,ValueType_,IndexType_> node_type;
+    typedef RBTNode<KeyType_,IndexType_> node_type;
     typedef RBTree<KeyType_,ValueType_,IndexType_,Cap_> tree_type;
     typedef node_list_iterator<KeyType_,ValueType_,IndexType_,Cap_> iterator;
     typedef std::pair<KeyType_,ValueType_> class_type;
@@ -149,7 +171,22 @@ public:
     //构造函数
     node_pool()
     {
-        clear();
+        //构造空闲链表信息
+        node_array_[0].clear();
+        //设置前向节点为空
+        node_array_[0].set_prev(0);
+        for (IndexType_ i = 1; i < Cap_; i++) {
+            node_array_[i - 1].set_next(i + 1/*真正的索引+1*/);
+            node_array_[i].clear();
+            node_array_[i].set_prev(i - 1 + 1/*真正的索引+1*/);
+        }
+        //设置后向节点为空
+        node_array_[Cap_ - 1].set_next(0);
+        size_ = 0;
+        //已用的节点链表头节点的索引
+        rb_tree_head_root_ = 0;
+        //默认数组首个元素即可用节点链表的头结点
+        free_node_head_ = 1;
     }
 
     //析构函数
@@ -161,6 +198,10 @@ public:
     //清理
     void clear()
     {
+        for(int index = 0;index < Cap_;index++)
+        {
+            data_array_[index].value().~ValueType_();
+        }
         //构造空闲链表信息
         node_array_[0].clear();
         //设置前向节点为空
@@ -232,9 +273,19 @@ public:
         return ARRAY_OFFSET(node_array_,node);
     }
 
+    void updateValue(node_type* node,ValueType_ value)
+    {
+        IndexType_ index = get_cur(node);
+        if(index > 0 && index <= Cap_)
+        {
+            //调用析构函数
+            data_array_[index - 1].value() = value;
+        }
+    }
+
     tree_type make_rbtree(std::size_t root)
     {
-        return tree_type(node_array_,root);
+        return tree_type(node_array_,data_array_,root);
     }
 
     iterator make_iterator(IndexType_ root)
@@ -260,7 +311,7 @@ public:
     iterator begin()
     {
         if (rb_tree_head_root_ != 0) {
-            return iterator(rb_tree_head_root_, node_array_);
+            return iterator(rb_tree_head_root_, node_array_,data_array_);
         }
         else {
             return end();
@@ -281,37 +332,15 @@ private:
             return 0;
         }
         node_type *p = get_node(free_node_head_);
+        IndexType_ index = free_node_head_;
         if (p)
         {
             size_++;
-            //先把空闲头结点指向当前空闲头结点的下一个节点
-            free_node_head_ = p->get_next();
             //call c++ placement new
-            new(p->data()) class_type(v);
-            p->init_rb();
-            return p;
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-
-    //申请空间
-    node_type* allocate()
-    {
-        if (size_ >= Cap_)
-        {
-            return NULL;
-        }
-        node_type *p = get_node(free_node_head_);
-        if (p)
-        {
-            size_++;
-            //先把空闲头结点指向当前空闲头结点的下一个节点
+            //把空闲头结点指向当前空闲头结点的下一个节点
             free_node_head_ = p->get_next();
-            //call c++ placement new
-            new(p->data()) class_type();
+            p->set_key(v.first);
+            new(data_array_[index - 1].data) ValueType_(v.second);
             p->init_rb();
             return p;
         }
@@ -327,8 +356,12 @@ private:
         {
             return;
         }
-        //调用析构函数
-        node_->value().~class_type();
+        IndexType_ index = get_cur(node_);
+        if(index > 0 && index <= Cap_)
+        {
+            //调用析构函数
+            data_array_[index - 1].value().~ValueType_();
+        }
         free_node_head_ = get_cur(node_);
         //插入空闲链表头部
         insert_node(get_node(free_node_head_), node_);
@@ -365,48 +398,14 @@ private:
             new_head->dis_from_list();
         }
     }
-
-    //删除头结点，返回新的头结点
-    node_type *delete_head(node_type *old_head)
-    {
-        if (old_head == 0) {
-            return 0;
-        }
-
-        node_type *new_head = get_node(old_head->get_next());
-        if (new_head) {
-            new_head->set_prev(-1);
-        }
-
-        old_head->dis_from_list();
-        return new_head;
-    }
-
-    //删除结点
-    void delete_node(node_type *node_)
-    {
-        if (node_ == 0) {
-            return;
-        }
-
-        int next = node_->get_next();
-        int prev = node_->get_prev();
-
-        node_type *prev_node = get_node(node_->get_prev());
-        node_type *next_node = get_node(node_->get_next());
-        if (prev_node) {
-            prev_node->set_next(next);
-        }
-        if (next_node) {
-            next_node->set_prev(prev);
-        }
-        node_->dis_from_list();
-    }
 private:
-    IndexType_ size_;                            //内存池已用数量
-    IndexType_ rb_tree_head_root_;               //红黑树链的头的根节点索引
-    IndexType_ free_node_head_;                  //空闲的节点链表头节点的索引
-    node_type  node_array_[Cap_];
+    IndexType_                  size_;                            //内存池已用数量
+    IndexType_                  rb_tree_head_root_;               //红黑树链的头的根节点索引
+    IndexType_                  free_node_head_;                  //空闲的节点链表头节点的索引
+    //这里为了序列化map的时候能够快速的序列化整个数据的内存块，把真正的数据和红黑树节点信息分成两个数组
+    //可以相互通过同一个索引快速取到对应的信息
+    node_type                   node_array_[Cap_];
+    ValueNode<ValueType_>       data_array_[Cap_];
 };
 }
 

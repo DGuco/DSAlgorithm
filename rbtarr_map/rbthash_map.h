@@ -93,7 +93,7 @@ public:
         if(old_node != NULL)
         {
             //如果存在则更新旧值返回成功
-            old_node->value().second = v.second;
+            hash_array_.updateValue(old_node,v.second);
             return true;
         }
 
@@ -126,7 +126,7 @@ public:
         rb_tree.insert(new_node);
         if(oldmin_node != NULL)
         {
-            if(new_node->value().first < oldmin_node->value().first)
+            if(new_node->get_key() < oldmin_node->get_key())
             {
                 new_node->set_left(preRoot);
                 new_node->set_color((RBTColor)(RB_MIN_NODE | new_node->get_color()));
@@ -140,7 +140,7 @@ public:
 
         if(oldmax_node != NULL)
         {
-            if(new_node->value().first > oldmax_node->value().first)
+            if(new_node->get_key() > oldmax_node->get_key())
             {
                 new_node->set_right(nextRoot);
                 new_node->set_color((RBTColor)(RB_MAX_NODE | new_node->get_color()));

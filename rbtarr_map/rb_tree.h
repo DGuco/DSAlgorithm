@@ -15,7 +15,7 @@ using namespace std;
 
 #define RB_TREE_JAVA 1
 #define DEBUG_RB_TREE 0
-#define NodeType_ RBTNode<KeyType_,ValueType_,INDEX_TYPE>
+#define NodeType_ RBTNode<KeyType_,INDEX_TYPE>
 #define ARRAY_OFFSET(array,node) (node - array + 1)   //这里取真实的索引+1作为数组索引[1,Cap_]
 
 enum RBTColor
@@ -27,15 +27,22 @@ enum RBTColor
     RB_BLACK = 0X8,
 };
 
+#pragma pack(1)
+template<typename T>
+struct ValueNode
+{
+    char data[sizeof(T)];
+    inline T* pointer()                       { return (T*)data; }
+    inline T& value()                         { return *((T*)data); }
+};
+
 /**
  *单个节点类
 * */
 #pragma pack(1)
-template<typename KeyType_,typename ValueType_,typename INDEX_TYPE = unsigned int>
+template<typename KeyType_,typename INDEX_TYPE = unsigned int>
 struct RBTNode
 {
-public:
-    typedef std::pair<KeyType_,ValueType_> NodeDataType_;
 public:
     RBTNode()
     {
@@ -63,11 +70,11 @@ public:
 
     void clear()
     {
+        key_ = 0;
         parent_ = 0;
         left_ = 0;
         right_ = 0;
         color_ = RB_NONE;
-        memset(data_,0,sizeof(NodeDataType_));
     }
 
     inline void set_prev(INDEX_TYPE value)   { left_ = value;}
@@ -88,11 +95,8 @@ public:
     inline void set_color(RBTColor value)    { color_ = value;}
     inline RBTColor  get_color()             { return (RBTColor)color_;}
 
-    inline void set_key(KeyType_ &key_)      { value().first = key_;}
-    inline KeyType_&     get_key()           { return  value().first;}
-
-    inline void set_value(ValueType_& value_){value().second = value_;}
-    inline ValueType_& get_value()            {return  value().second;}
+    inline void set_key(KeyType_ key)       {  key_ = key;}
+    inline KeyType_      get_key()           {  return  key_;}
 
     void dis_from_list()
     {
@@ -100,21 +104,12 @@ public:
         set_prev(0);
     }
 
-    std::pair<KeyType_,ValueType_>& value()
-    {
-        return *((NodeDataType_*)data_);
-    }
-
-    char* data()
-    {
-        return data_;
-    }
 public:
     RBTNode(KeyType_ value, RBTColor c, INDEX_TYPE p, INDEX_TYPE l, INDEX_TYPE r)
         : color_(c), parent_(), left_(l), right_(r)
     {}
 private:
-    char                                data_[sizeof(NodeDataType_)];  //节点对象信息
+    KeyType_                            key_;                          //节点对象信息
     INDEX_TYPE                          parent_;                       //父亲节点在数组中的索引位置+1
     INDEX_TYPE                          left_;                         //左子节点在数组中的索引位置+1
     INDEX_TYPE                          right_;                        //右子节点在数组中的索引位置+1
@@ -125,7 +120,7 @@ template<typename KeyType_,typename ValueType_,typename INDEX_TYPE = unsigned in
 class RBTree
 {
 public:
-    RBTree(NodeType_ *pool,INDEX_TYPE root = 0);
+    RBTree(NodeType_ *pool,ValueNode<ValueType_>* data,INDEX_TYPE root = 0);
     ~RBTree();
     bool isRBTree();
     // 前序遍历"红黑树"
@@ -197,17 +192,20 @@ public:
     inline NodeType_ *rightOf(NodeType_ *node);
     inline void setRight(NodeType_ *node, NodeType_ *right);
     inline INDEX_TYPE curOf(NodeType_ *node);
+    inline ValueNode<ValueType_>* valueOf(NodeType_ *node);
+    inline void setValue(NodeType_ *node,ValueNode<ValueType_>* value);
 private:
-    NodeType_  *m_Pool;    //
-    INDEX_TYPE   m_Root;
+    NodeType_               *m_Pool;    //
+    ValueNode<ValueType_>   *m_Data;    //
+    INDEX_TYPE               m_Root;
 };
 
 /*
  * 构造函数
  */
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::RBTree(NodeType_  *pool,INDEX_TYPE root)
-    :m_Pool(pool),m_Root(root)
+RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::RBTree(NodeType_  *pool,ValueNode<ValueType_>* data,INDEX_TYPE root)
+    :m_Pool(pool),m_Data(data),m_Root(root)
 {
 }
 
@@ -797,7 +795,7 @@ NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
          * 红黑树的平衡就可以了
          */
         node->set_key(succNode->get_key());
-        node->set_value(succNode->get_value());
+        setValue(node, valueOf(succNode));
         //把要删除的节点换位后继节点,准备删除后继节点
         node = succNode;
     }
@@ -1036,6 +1034,29 @@ template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t C
 inline INDEX_TYPE RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::curOf(NodeType_ *node)
 {
     return node == NULL ? 0 : ARRAY_OFFSET(m_Pool,node);
+}
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline ValueNode<ValueType_>* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::valueOf(NodeType_ *node)
+{
+    INDEX_TYPE index = curOf(node);
+    if(index > 0 && index <= Cap_)
+    {
+        return &m_Data[index - 1];
+    }
+    return NULL;
+}
+
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setValue(NodeType_ *node,ValueNode<ValueType_>* value)
+{
+    if(value)
+    {
+        INDEX_TYPE index = curOf(node);
+        if(index > 0 && index <= Cap_)
+        {
+            m_Data[index - 1] = *value;
+        }
+    }
 }
 
 
