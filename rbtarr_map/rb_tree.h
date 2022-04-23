@@ -181,12 +181,6 @@ public:
     inline NodeType_* getNode(INDEX_TYPE index);
     inline NodeType_ *parentOf(NodeType_ *node);
     inline void *setParent(NodeType_ *node, NodeType_ *parent);
-    inline RBTColor rbColorOf(NodeType_ *node);
-    inline bool isRed(NodeType_ *node);
-    inline bool isBlack(NodeType_ *node);
-    inline void setRbColor(NodeType_ *node, RBTColor color);
-    inline void setRed(NodeType_ *node);
-    inline void setBlack(NodeType_ *node);
     inline NodeType_ *leftOf(NodeType_ *node);
     inline void *setLeft(NodeType_ *node, NodeType_ *left);
     inline NodeType_ *rightOf(NodeType_ *node);
@@ -194,6 +188,12 @@ public:
     inline INDEX_TYPE curOf(NodeType_ *node);
     inline ValueNode<ValueType_>* valueOf(NodeType_ *node);
     inline void setValue(NodeType_ *node,ValueNode<ValueType_>* value);
+    static inline bool isRed(NodeType_ *node);
+    static inline bool isBlack(NodeType_ *node);
+    static inline void setRed(NodeType_ *node);
+    static inline void setBlack(NodeType_ *node);
+    static inline RBTColor rbColorOf(NodeType_ *node);
+    static inline void setRbColor(NodeType_ *node, RBTColor color);
 private:
     NodeType_               *m_Pool;    //
     ValueNode<ValueType_>   *m_Data;    //

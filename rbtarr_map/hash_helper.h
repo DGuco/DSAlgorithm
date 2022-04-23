@@ -124,6 +124,7 @@ public:
     {
         if(nodelist_.size() <= 0)
         {
+            nodelist_.clear();
             tree_type rbtree(array_,data_array_,root_);
             if(!rbtree.isEmpty())
             {
@@ -323,6 +324,10 @@ public:
         return iterator();
     }
 
+    char* resetMapFromBinary(char* data)
+    {
+        memcpy(data_array_,data,sizeof(ValueNode<ValueType_>) * Cap_);
+    }
 private:
     //申请空间
     node_type *allocate(const class_type &v)

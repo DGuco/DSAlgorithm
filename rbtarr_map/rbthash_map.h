@@ -15,7 +15,7 @@ using namespace std;
 
 namespace rbt_hash
 {
-template <class KeyType_, class ValueType_, std::size_t _Cap = 100>
+template <class KeyType_, class ValueType_, std::size_t _Cap = 0>
 class RbtHashMap
 {
 public:
@@ -72,20 +72,9 @@ public:
             //设置链表头和尾
             buckets_[bucket].root_ = buckets_[bucket].minson_ = buckets_[bucket].maxson_ = rb_tree.root();
             //新的rbtree成为新的树链头部
-            new_node->set_right(hash_array_.rb_tree_head_root());
-            new_node->set_color((RBTColor)(RB_MAX_NODE | new_node->get_color()));
-            new_node->set_left(0);
-            new_node->set_color((RBTColor)(RB_MIN_NODE | new_node->get_color()));
-            tree_type next_tree = hash_array_.make_rbtree(hash_array_.rb_tree_head_root());
-            if(!next_tree.isEmpty())
-            {
-                node_type* newmin_node = next_tree.minimum();
-                if(newmin_node)
-                {
-                    newmin_node->set_left(buckets_[bucket].root_);
-                    newmin_node->set_color((RBTColor)(RB_MIN_NODE | newmin_node->get_color()));
-                }
-            }
+            updateNextTree(new_node,hash_array_.rb_tree_head_root());
+            updatePreTree(new_node,0);
+            updatePreTree(hash_array_.rb_tree_head_root(),buckets_[bucket].root_);
             hash_array_.set_rb_tree_head_root(rb_tree.root());
             return true;
         }
@@ -128,13 +117,11 @@ public:
         {
             if(new_node->get_key() < oldmin_node->get_key())
             {
-                new_node->set_left(preRoot);
-                new_node->set_color((RBTColor)(RB_MIN_NODE | new_node->get_color()));
+                updatePreTree(new_node,preRoot);
                 buckets_[bucket].minson_ = hash_array_.get_cur(new_node);
             }else
             {
-                oldmin_node->set_left(preRoot);
-                oldmin_node->set_color((RBTColor)(RB_MIN_NODE | oldmin_node->get_color()));
+                updatePreTree(oldmin_node,preRoot);
             }
         }
 
@@ -142,13 +129,11 @@ public:
         {
             if(new_node->get_key() > oldmax_node->get_key())
             {
-                new_node->set_right(nextRoot);
-                new_node->set_color((RBTColor)(RB_MAX_NODE | new_node->get_color()));
+                updateNextTree(new_node,nextRoot);
                 buckets_[bucket].maxson_ = hash_array_.get_cur(new_node);
             }else
             {
-                oldmax_node->set_right(nextRoot);
-                oldmax_node->set_color((RBTColor)(RB_MAX_NODE | oldmax_node->get_color()));
+                updateNextTree(oldmax_node,nextRoot);
             }
         }
 
@@ -160,18 +145,8 @@ public:
                 hash_array_.set_rb_tree_head_root(rb_tree.root());
             }
             buckets_[bucket].root_ = rb_tree.root();
-            tree_type pre_tree = hash_array_.make_rbtree(preRoot);
-            tree_type next_tree = hash_array_.make_rbtree(nextRoot);
-            node_type* newmax_node = pre_tree.maximum();
-            if(newmax_node)
-            {
-                newmax_node->set_right(buckets_[bucket].root_);
-            }
-            node_type* newmin_node = next_tree.minimum();
-            if(newmin_node)
-            {
-                newmin_node->set_left(buckets_[bucket].root_);
-            }
+            updateNextTree(preRoot,rb_tree.root());
+            updatePreTree(nextRoot,rb_tree.root());
         }
         return true;
     }
@@ -233,24 +208,12 @@ public:
         {
             if(buckets_[bucket].minson_ == hash_array_.get_cur(remove_node))
             {
-                node_type* newmin_node = rb_tree.minimum();
-                if(newmin_node)
-                {
-                    newmin_node->set_left(preRoot);
-                    newmin_node->set_color((RBTColor)(RB_MIN_NODE | newmin_node->get_color()));
-                    buckets_[bucket].minson_ = hash_array_.get_cur(newmin_node);
-                }
+                updatePreTree(rb_tree,preRoot);
             }
 
             if(buckets_[bucket].maxson_  == hash_array_.get_cur(remove_node))
             {
-                node_type* newmax_node = rb_tree.maximum();
-                if(newmax_node)
-                {
-                    newmax_node->set_right(nextRoot);
-                    newmax_node->set_color((RBTColor)(RB_MAX_NODE | newmax_node->get_color()));
-                    buckets_[bucket].maxson_ = hash_array_.get_cur(newmax_node);
-                }
+                updateNextTree(rb_tree,nextRoot);
             }
 
             if(buckets_[bucket].root_ != rb_tree.root())
@@ -260,18 +223,8 @@ public:
                     hash_array_.set_rb_tree_head_root(rb_tree.root());
                 }
                 buckets_[bucket].root_ = rb_tree.root();
-                tree_type pre_tree = hash_array_.make_rbtree(preRoot);
-                tree_type next_tree = hash_array_.make_rbtree(nextRoot);
-                node_type* newmax_node = pre_tree.maximum();
-                if(newmax_node)
-                {
-                    newmax_node->set_right(rb_tree.root());
-                }
-                node_type* newmin_node = next_tree.minimum();
-                if(newmin_node)
-                {
-                    newmin_node->set_left(rb_tree.root());
-                }
+                updateNextTree(preRoot,buckets_[bucket].root_);
+                updatePreTree(nextRoot,buckets_[bucket].root_);
             }
         }else//树删空了
         {
@@ -282,46 +235,21 @@ public:
             //前后两棵树不为空，把前树的尾部指向后树，后树的头部指向前树
             if(pre_root_node && next_root_node)
             {
-                tree_type pre_tree = hash_array_.make_rbtree(preRoot);
-                tree_type next_tree = hash_array_.make_rbtree(nextRoot);
-                node_type* newmin_node = next_tree.minimum();
-                if(newmin_node)
-                {
-                    newmin_node->set_left(preRoot);
-                    newmin_node->set_color((RBTColor)(RB_MIN_NODE | newmin_node->get_color()));
-                }
-                node_type* newmax_node = pre_tree.maximum();
-                if(newmax_node)
-                {
-                    newmax_node->set_right(nextRoot);
-                    newmax_node->set_color((RBTColor)(RB_MAX_NODE | newmax_node->get_color()));
-                }
+                updateNextTree(preRoot,nextRoot);
+                updatePreTree(nextRoot,preRoot);
             }
             //前树不为空后树为空
             else if(pre_root_node)
             {
-                tree_type pre_tree = hash_array_.make_rbtree(preRoot);
-                node_type* newmax_node = pre_tree.maximum();
-                if(newmax_node)
-                {
-                    newmax_node->set_right(NULL);
-                    newmax_node->set_color(newmax_node->get_color());
-                }
+                updateNextTree(preRoot,NULL);
             }
             //前树为空后树不为空,调整树链指针，并且后树成为新的树链的头
             else
             {
-                tree_type next_tree = hash_array_.make_rbtree(nextRoot);
-                node_type* newmin_node = next_tree.minimum();
-                if(newmin_node)
-                {
-                    newmin_node->set_left(NULL);
-                    newmin_node->set_color(newmin_node->get_color());
-                }
+                updatePreTree(nextRoot,NULL);
                 hash_array_.set_rb_tree_head_root(nextRoot);
             }
         }
-
         hash_array_.deallocate_node(remove_node);
         return;
     }
@@ -335,12 +263,112 @@ public:
             buckets_[t].maxson_ = 0;
         }
         hash_array_.clear();
-        printf("========= map index size = %d\n",sizeof(IndexType_));
     }
 
-    RbtHashMap() {clear();}
-    ~RbtHashMap() {clear();}
+    RbtHashMap()
+    {
+        if(DEBUG_RB_TREE)
+        {
+            printf("RbtHashMap index size = %d\n",sizeof(IndexType_));
+        }
+        clear();
+    }
+    ~RbtHashMap()
+    {
+        clear();
+    }
+private:
+    void updatePreTree(tree_type rb_tree,IndexType_ preRoot)
+    {
+        node_type* newmin_node = rb_tree.minimum();
+        if(newmin_node)
+        {
+            newmin_node->set_left(preRoot);
+            if(preRoot != 0)
+            {
+                newmin_node->set_color((RBTColor)(RB_MIN_NODE | newmin_node->get_color()));
+            }else
+            {
+                newmin_node->set_color(tree_type::rbColorOf(newmin_node));
+            }
+            hash_function::hash<KeyType_> hash_func;
+            std::size_t bucket = hash_func(newmin_node->get_key()) % _Cap;
+            buckets_[bucket].minson_ = hash_array_.get_cur(newmin_node);
+        }
+    }
 
+    void updatePreTree(IndexType_ root,IndexType_ preRoot)
+    {
+        node_type* rootNode = hash_array_.get_node(root);
+        if(rootNode)
+        {
+            hash_function::hash<KeyType_> hash_func;
+            std::size_t bucket = hash_func(rootNode->get_key()) % _Cap;
+            node_type* minNode = hash_array_.get_node(buckets_[bucket].minson_);
+            updatePreTree(minNode,preRoot);
+        }
+    }
+
+    void updatePreTree(node_type* minNode,IndexType_ preRoot)
+    {
+        if(minNode)
+        {
+            minNode->set_left(preRoot);
+            if(preRoot != 0)
+            {
+                minNode->set_color((RBTColor)(RB_MIN_NODE | minNode->get_color()));
+            }else
+            {
+                minNode->set_color(tree_type::rbColorOf(minNode));
+            }
+        }
+    }
+
+    void updateNextTree(tree_type rb_tree,IndexType_ nextRoot)
+    {
+        node_type* newmax_node = rb_tree.maximum();
+        if(newmax_node)
+        {
+            newmax_node->set_right(nextRoot);
+            if(nextRoot != 0)
+            {
+                newmax_node->set_color((RBTColor)(RB_MAX_NODE | newmax_node->get_color()));
+            }else
+            {
+                newmax_node->set_color(tree_type::rbColorOf(newmax_node));
+            }
+            hash_function::hash<KeyType_> hash_func;
+            std::size_t bucket = hash_func(newmax_node->get_key()) % _Cap;
+            buckets_[bucket].minson_ = hash_array_.get_cur(newmax_node);
+        }
+    }
+
+    void updateNextTree(IndexType_ root,IndexType_ nextRoot)
+    {
+        node_type* rootNode = hash_array_.get_node(root);
+        if(rootNode)
+        {
+            hash_function::hash<KeyType_> hash_func;
+            std::size_t bucket = hash_func(rootNode->get_key()) % _Cap;
+            node_type* maxNode = hash_array_.get_node(buckets_[bucket].maxson_);
+            updateNextTree(maxNode,nextRoot);
+        }
+    }
+
+    void updateNextTree(node_type* maxNode,IndexType_ nextRoot)
+    {
+        if(maxNode)
+        {
+            maxNode->set_right(nextRoot);
+            if(nextRoot != 0)
+            {
+                maxNode->set_color((RBTColor)(RB_MAX_NODE | maxNode->get_color()));
+            }else
+            {
+                maxNode->set_color(tree_type::rbColorOf(maxNode));
+            }
+        }
+    }
 private:
     RbtHashMap(const RbtHashMap& other );
 
