@@ -33,14 +33,17 @@ public:
 int main()
 {
     RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
+
     for(int i = 0;i < TEST_COUNT;i++)
     {
         testMap->insert(i * HASH_CONFLICT_RATE,ValueType(i * HASH_CONFLICT_RATE));
     }
     testMap->insert(99999,ValueType(99999));
-
-    RbtHashMap<int,ValueType,TEST_COUNT>::iterator it = testMap->begin();
-    for(;it != testMap->end();it++)
+    RbtHashMap<int,ValueType,TEST_COUNT>* test1Map = new RbtHashMap<int,ValueType,TEST_COUNT>();
+    //调用memcpy复制rtbhashmap,验证二进制可复制性
+    memcpy((void*)test1Map,(void*)testMap,sizeof(RbtHashMap<int,ValueType,TEST_COUNT>));
+    RbtHashMap<int,ValueType,TEST_COUNT>::iterator it = test1Map->begin();
+    for(;it != test1Map->end();it++)
     {
         int a = it->second->a;
         std::cout << "it->first = " << it->first << " it->second = " << a << std::endl;
@@ -49,5 +52,7 @@ int main()
     std::cout << "Hello, World!" << std::endl;
     delete testMap;
     testMap = NULL;
+    delete test1Map;
+    test1Map = NULL;
     return 0;
 }
