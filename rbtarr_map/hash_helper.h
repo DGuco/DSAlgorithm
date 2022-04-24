@@ -40,7 +40,7 @@ public:
     }
 
     explicit node_list_iterator(node_type* node)
-        : root_(NULL), array_(NULL),data_array_(NULL),curnode_(node)
+        : root_(0), array_(NULL),data_array_(NULL),curnode_(node)
     {
         look_rbtree();
     }
@@ -144,6 +144,12 @@ public:
             curnode_ = NULL;
         }
     }
+
+    node_type* curNode()
+    {
+        return curnode_;
+    }
+
 private:
     IndexType_                      root_;                //红黑树的根节点
     node_type                       *array_;              //节点所属的数组

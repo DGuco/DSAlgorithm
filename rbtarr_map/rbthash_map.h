@@ -172,14 +172,13 @@ public:
 
     void erase( iterator it )
     {
+        if(it == hash_array_.end())
+        {
+            return;
+        }
 
-    }
-
-    void erase( const KeyType_& k )
-    {
         hash_function::hash<KeyType_> hash_func;
-        std::size_t bucket = hash_func(k) % _Cap;
-
+        std::size_t bucket = hash_func(it->first) % _Cap;
         tree_type rb_tree = hash_array_.make_rbtree(buckets_[bucket].root_);
         //该bucket是空的
         if ( rb_tree.isEmpty())
@@ -203,7 +202,7 @@ public:
                 nextRoot = oldmax_node->get_right();
             }
         }
-        node_type* remove_node = rb_tree.remove(k);
+        node_type* remove_node = rb_tree.remove(it.curNode());
         if(!rb_tree.isEmpty())
         {
             if(buckets_[bucket].minson_ == hash_array_.get_cur(remove_node))
@@ -238,20 +237,24 @@ public:
                 updateNextTree(preRoot,nextRoot);
                 updatePreTree(nextRoot,preRoot);
             }
-            //前树不为空后树为空
+                //前树不为空后树为空
             else if(pre_root_node)
             {
-                updateNextTree(preRoot,NULL);
+                updateNextTree(preRoot,0);
             }
-            //前树为空后树不为空,调整树链指针，并且后树成为新的树链的头
+                //前树为空后树不为空,调整树链指针，并且后树成为新的树链的头
             else
             {
-                updatePreTree(nextRoot,NULL);
+                updatePreTree(nextRoot,0);
                 hash_array_.set_rb_tree_head_root(nextRoot);
             }
         }
         hash_array_.deallocate_node(remove_node);
-        return;
+    }
+
+    void erase( const KeyType_& k )
+    {
+        return erase(find(k));
     }
 
     void clear()
@@ -269,7 +272,7 @@ public:
     {
         if(DEBUG_RB_TREE)
         {
-            printf("RbtHashMap index size = %d\n",sizeof(IndexType_));
+            printf("RbtHashMap index size = %ld\n",sizeof(IndexType_));
         }
         clear();
     }

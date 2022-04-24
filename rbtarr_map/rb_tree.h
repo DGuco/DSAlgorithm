@@ -145,6 +145,8 @@ public:
     void insert(NodeType_ *node);
     // 删除结点(key为节点键值)
     NodeType_* remove(KeyType_ key);
+    // 删除函数
+    NodeType_* remove(NodeType_ *node);
     // 打印红黑树
     void print();
     bool isEmpty();
@@ -171,8 +173,6 @@ private:
     void rightRotate(NodeType_ *y);
     // 插入修正函数
     void insertFixUp(NodeType_ *node);
-    // 删除函数
-    NodeType_* remove(NodeType_ *node);
     // 删除修正函数
     void removeFixUp(NodeType_ *node);
     // 打印红黑树
@@ -840,7 +840,7 @@ NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
             setParent(node,NULL);
         }
     }
-    node->clear_rb();
+    node->clear();
     return node;
 }
 
