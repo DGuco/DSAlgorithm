@@ -358,7 +358,7 @@ NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::search(NodeType_ *x, Key
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
 NodeType_ *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::search(KeyType_ key)
 {
-    search(getNode(m_Root), key);
+    return search(getNode(m_Root), key);
 }
 
 /*
