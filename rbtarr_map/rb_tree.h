@@ -180,9 +180,9 @@ private:
 public:
     inline NodeType_* getNode(INDEX_TYPE index);
     inline NodeType_ *parentOf(NodeType_ *node);
-    inline void *setParent(NodeType_ *node, NodeType_ *parent);
+    inline void setParent(NodeType_ *node, NodeType_ *parent);
     inline NodeType_ *leftOf(NodeType_ *node);
-    inline void *setLeft(NodeType_ *node, NodeType_ *left);
+    inline void setLeft(NodeType_ *node, NodeType_ *left);
     inline NodeType_ *rightOf(NodeType_ *node);
     inline void setRight(NodeType_ *node, NodeType_ *right);
     inline INDEX_TYPE curOf(NodeType_ *node);
@@ -579,7 +579,8 @@ void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::insertFixUp(NodeType_ *node)
     NodeType_ *parent, *gparent;
 
     // 若父节点存在，并且父节点的颜色是红色,根节点是黑色(被插入节点是一定存在非空祖父节点)
-    while ((parent = parentOf(node)) && isRed(parent))
+    parent = parentOf(node);
+    while (parent && isRed(parent))
     {
         gparent = parentOf(parent);
         //若父节点是祖父节点的左孩子
@@ -628,6 +629,7 @@ void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::insertFixUp(NodeType_ *node)
                 leftRotate(parentOf(parentOf(node)));
             }
         }
+        parent = parentOf(node);
     }
 
     // 将根节点设为黑色
@@ -942,7 +944,7 @@ inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::parentOf(NodeType
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-inline void *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setParent(NodeType_ *node, NodeType_ *parent)
+inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setParent(NodeType_ *node, NodeType_ *parent)
 {
     if(node)
         node->set_parent(parent == NULL ? 0 : curOf(parent));
@@ -999,12 +1001,15 @@ inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::leftOf(NodeType_*
 {
     if(node == NULL) return NULL;
     //如果是最小节点，则左子树为空(实际上不为空，为了方便遍历hash_map，左子树指向了hash_map红黑树链的前一个树的root节点)
-    if(node->get_color() == RB_NONE || node->get_color() & RB_MIN_NODE) return  NULL;
+    if(node->get_color() == RB_NONE || node->get_color() & RB_MIN_NODE)
+    {
+        return  NULL;
+    }
     return getNode(node->get_left());
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-inline void *RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setLeft(NodeType_ *node, NodeType_ *left)
+inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setLeft(NodeType_ *node, NodeType_ *left)
 {
     if(node)
     {
