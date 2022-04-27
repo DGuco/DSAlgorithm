@@ -48,6 +48,8 @@ int main()
         int a = it->second->a;
         std::cout << "it->first = " << it->first << " it->second = " << a << std::endl;
     }
+
+    printf("a = %d");
     testMap->erase(HASH_CONFLICT_RATE * 1);
     std::cout << "Hello, World!" << std::endl;
     delete testMap;

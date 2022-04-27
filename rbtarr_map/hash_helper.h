@@ -42,7 +42,7 @@ public:
     explicit node_list_iterator(node_type* node)
         : root_(0), array_(NULL),data_array_(NULL),curnode_(node)
     {
-        look_rbtree();
+
     }
 
     node_list_iterator()

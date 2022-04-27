@@ -27,7 +27,6 @@ enum RBTColor
     RB_BLACK = 0X8,
 };
 
-#pragma pack(1)
 template<typename T>
 struct ValueNode
 {
@@ -39,7 +38,6 @@ struct ValueNode
 /**
  *单个节点类
 * */
-#pragma pack(1)
 template<typename KeyType_,typename INDEX_TYPE = unsigned int>
 struct RBTNode
 {
