@@ -30,23 +30,23 @@ public:
     typedef std::pair<KeyType_,ValueType_*> &reference;
 
     node_list_iterator(const iterator_type &other)
-        : root_(other.root_), array_(other.array_),data_array_(other.data_array_),nodelist_(other.nodelist_),curnode_(other.curnode_)
+        : root_(other.root_), node_array_(other.node_array_), data_array_(other.data_array_), nodelist_(other.nodelist_), curnode_(other.curnode_)
     {}
 
     explicit node_list_iterator(IndexType_ proot_, node_type *parray_,ValueNode<ValueType_>* pdata_)
-        : root_(proot_), array_(parray_),data_array_(pdata_),curnode_(NULL)
+        : root_(proot_), node_array_(parray_), data_array_(pdata_), curnode_(NULL)
     {
         look_rbtree();
     }
 
-    explicit node_list_iterator(node_type* node)
-        : root_(0), array_(NULL),data_array_(NULL),curnode_(node)
+    explicit node_list_iterator(node_type* node,node_type *parray_,ValueNode<ValueType_>* pdata_)
+        : root_(0), node_array_(parray_), data_array_(pdata_), curnode_(node)
     {
 
     }
 
     node_list_iterator()
-        : root_(0), array_(NULL),data_array_(NULL),curnode_(NULL)
+        : root_(0), node_array_(NULL), data_array_(NULL), curnode_(NULL)
     {}
 
     reference operator*()
@@ -95,7 +95,7 @@ public:
     iterator_type &operator=(const iterator_type &other)
     {
         if (this != &other) {
-            array_ = other.array_;
+            node_array_ = other.node_array_;
             nodelist_ = other.nodelist_;
             curnode_ = other.curnode_;
             root_ = other.root_;
@@ -106,7 +106,7 @@ public:
     node_type *get_node(std::size_t index) const
     {
         if (index > 0 && index <= Cap_) {
-            return &array_[index - 1];
+            return &node_array_[index - 1];
         }
         return 0;
     }
@@ -115,7 +115,7 @@ public:
     {
         if(curnode_)
         {
-            return ARRAY_OFFSET(array_,curnode_);
+            return ARRAY_OFFSET(node_array_, curnode_);
         }
         return 0;
     }
@@ -125,7 +125,7 @@ public:
         if(nodelist_.size() <= 0)
         {
             nodelist_.clear();
-            tree_type rbtree(array_,data_array_,root_);
+            tree_type rbtree(node_array_, data_array_, root_);
             if(!rbtree.isEmpty())
             {
                 rbtree.inOrder(nodelist_);
@@ -152,7 +152,7 @@ public:
 
 private:
     IndexType_                      root_;                //红黑树的根节点
-    node_type                       *array_;              //节点所属的数组
+    node_type*                      node_array_;              //节点所属的数组
     ValueNode<ValueType_>*          data_array_;
     std::list<node_type*>           nodelist_;   //
     std::pair<KeyType_,ValueType_*> iteator_;
@@ -297,12 +297,12 @@ public:
 
     iterator make_iterator(IndexType_ root)
     {
-        return iterator(root,node_array_);
+        return iterator(root,node_array_,data_array_);
     }
 
     iterator make_iterator(node_type* node)
     {
-        return iterator(node);
+        return iterator(node,node_array_,data_array_);
     }
 
     void set_rb_tree_head_root(IndexType_ value)
