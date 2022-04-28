@@ -203,6 +203,10 @@ public:
             }
         }
         node_type* remove_node = rb_tree.remove(it.curNode());
+        if(remove_node == NULL)
+        {
+            return;
+        }
         if(!rb_tree.isEmpty())
         {
             if(buckets_[bucket].minson_ == hash_array_.get_cur(remove_node))
@@ -360,7 +364,7 @@ private:
             }
             hash_function::hash<KeyType_> hash_func;
             std::size_t bucket = hash_func(newmax_node->get_key()) % _Cap;
-            buckets_[bucket].minson_ = hash_array_.get_cur(newmax_node);
+            buckets_[bucket].maxson_ = hash_array_.get_cur(newmax_node);
         }
     }
 
