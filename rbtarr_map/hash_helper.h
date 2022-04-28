@@ -54,7 +54,7 @@ public:
         if(curnode_ != NULL)
         {
             IndexType_ index = curnode_->get_data();
-            if(index >= 0 && index <= Cap_)
+            if(index > 0 && index <= Cap_)
             {
                 iteator_.first = curnode_->get_key();
                 iteator_.second = data_array_[index - 1].pointer();
@@ -63,6 +63,9 @@ public:
                 iteator_.first = curnode_->get_key();
                 iteator_.second = NULL;
             }
+        }else
+        {
+            iteator_.second = NULL;
         }
         return iteator_;
     }
@@ -97,7 +100,8 @@ public:
 
     iterator_type &operator=(const iterator_type &other)
     {
-        if (this != &other) {
+        if (this != &other)
+        {
             node_array_ = other.node_array_;
             curnode_ = other.curnode_;
             root_ = other.root_;
@@ -184,23 +188,7 @@ public:
     //构造函数
     node_pool()
     {
-        memset(data_array_,0,sizeof(ValueNode<KeyType_,ValueType_>) * Cap_);
-        //构造空闲链表信息
-        node_array_[0].clear();
-        //设置前向节点为空
-        node_array_[0].set_prev(0);
-        for (IndexType_ i = 1; i < Cap_; i++) {
-            node_array_[i - 1].set_next(i + 1/*真正的索引+1*/);
-            node_array_[i].clear();
-            node_array_[i].set_prev(i - 1 + 1/*真正的索引+1*/);
-        }
-        //设置后向节点为空
-        node_array_[Cap_ - 1].set_next(0);
-        size_ = 0;
-        //已用的节点链表头节点的索引
-        rb_tree_head_root_ = 0;
-        //默认数组首个元素即可用节点链表的头结点
-        free_node_head_ = 1;
+        init();
     }
 
     //析构函数
@@ -216,6 +204,11 @@ public:
         {
             data_array_[index].value().~ValueType_();
         }
+        init();
+    }
+
+    void init()
+    {
         //构造空闲链表信息
         node_array_[0].clear();
         //设置前向节点为空
@@ -235,7 +228,6 @@ public:
         //默认数组首个元素即可用节点链表的头结点
         free_node_head_ = 1;
     }
-
     //内存池当前大小
     std::size_t size() const
     {
@@ -365,7 +357,10 @@ private:
             free_node_head_ = p->get_next();
             p->set_key(v.first);
             IndexType_ index = p->get_data();
-            new(data_array_[index - 1].data) ValueType_(v.second);
+            if(index > 0 && index <= Cap_)
+            {
+                new(data_array_[index - 1].data) ValueType_(v.second);
+            }
             p->init_rb();
             return p;
         }
