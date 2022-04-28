@@ -247,7 +247,7 @@ public:
                 updateNextTree(preRoot,0);
             }
                 //前树为空后树不为空,调整树链指针，并且后树成为新的树链的头
-            else
+            else if(next_root_node)
             {
                 updatePreTree(nextRoot,0);
                 hash_array_.set_rb_tree_head_root(nextRoot);

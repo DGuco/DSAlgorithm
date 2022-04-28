@@ -71,7 +71,6 @@ public:
 
     void clear_rb()
     {
-        key_ = 0;
         parent_ = 0;
         left_ = 0;
         right_ = 0;
