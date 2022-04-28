@@ -109,8 +109,8 @@ public:
     inline void set_key(KeyType_ key)       {  key_ = key;}
     inline KeyType_      get_key()           {  return  key_;}
 
-    inline void set_data(KeyType_ value)       {  data_ = value;}
-    inline KeyType_      get_data()            {  return  data_;}
+    inline void set_data(INDEX_TYPE value)       {  data_ = value;}
+    inline INDEX_TYPE      get_data()            {  return  data_;}
 
     void dis_from_list()
     {
@@ -808,8 +808,8 @@ NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
          * 节点的内容复制到删除节点的位置上并不破坏红黑树二叉搜索树的特性)，但是有可能破坏红黑树的平衡特性,下面只要删除后继节点然后调整
          * 红黑树的平衡就可以了
          */
-        KeyType_ key = node->get_key();
-        KeyType_ data = node->get_data();
+        KeyType_    key = node->get_key();
+        INDEX_TYPE  data = node->get_data();
         node->set_key(succNode->get_key());
         node->set_data(succNode->get_data());
         succNode->set_key(key);
