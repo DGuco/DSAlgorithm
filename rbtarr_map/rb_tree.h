@@ -27,12 +27,21 @@ enum RBTColor
     RB_BLACK = 0X8,
 };
 
-template<typename T>
+template<typename KeyType_,typename T>
 struct ValueNode
 {
     char data[sizeof(T)];
     inline T* pointer()                       { return (T*)data; }
     inline T& value()                         { return *((T*)data); }
+    KeyType_ Key()
+    {
+        return value().Key();
+    }
+
+    bool IsValid()
+    {
+        return value().IsValid();;
+    }
 };
 
 /**
@@ -118,7 +127,7 @@ template<typename KeyType_,typename ValueType_,typename INDEX_TYPE = unsigned in
 class RBTree
 {
 public:
-    RBTree(NodeType_ *pool,ValueNode<ValueType_>* data,INDEX_TYPE root = 0);
+    RBTree(NodeType_ *pool,ValueNode<KeyType_,ValueType_>* data,INDEX_TYPE root = 0);
     ~RBTree();
     bool isRBTree();
     // 前序遍历"红黑树"
@@ -184,8 +193,8 @@ public:
     inline NodeType_ *rightOf(NodeType_ *node);
     inline void setRight(NodeType_ *node, NodeType_ *right);
     inline INDEX_TYPE curOf(NodeType_ *node);
-    inline ValueNode<ValueType_>* valueOf(NodeType_ *node);
-    inline void setValue(NodeType_ *node,ValueNode<ValueType_>* value);
+    inline ValueNode<KeyType_,ValueType_>* valueOf(NodeType_ *node);
+    inline void setValue(NodeType_ *node,ValueNode<KeyType_,ValueType_>* value);
     static inline bool isRed(NodeType_ *node);
     static inline bool isBlack(NodeType_ *node);
     static inline void setRed(NodeType_ *node);
@@ -194,7 +203,7 @@ public:
     static inline void setRbColor(NodeType_ *node, RBTColor color);
 private:
     NodeType_               *m_Pool;    //
-    ValueNode<ValueType_>   *m_Data;    //
+    ValueNode<KeyType_,ValueType_>   *m_Data;    //
     INDEX_TYPE               m_Root;
 };
 
@@ -202,7 +211,7 @@ private:
  * 构造函数
  */
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::RBTree(NodeType_  *pool,ValueNode<ValueType_>* data,INDEX_TYPE root)
+RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::RBTree(NodeType_  *pool,ValueNode<KeyType_,ValueType_>* data,INDEX_TYPE root)
     :m_Pool(pool),m_Data(data),m_Root(root)
 {
 }
@@ -1039,7 +1048,7 @@ inline INDEX_TYPE RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::curOf(NodeType_ *
     return node == NULL ? 0 : ARRAY_OFFSET(m_Pool,node);
 }
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-inline ValueNode<ValueType_>* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::valueOf(NodeType_ *node)
+inline ValueNode<KeyType_,ValueType_>* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::valueOf(NodeType_ *node)
 {
     INDEX_TYPE index = curOf(node);
     if(index > 0 && index <= Cap_)
@@ -1050,7 +1059,7 @@ inline ValueNode<ValueType_>* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::value
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
-inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setValue(NodeType_ *node,ValueNode<ValueType_>* value)
+inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setValue(NodeType_ *node,ValueNode<KeyType_,ValueType_>* value)
 {
     if(value)
     {

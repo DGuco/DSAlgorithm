@@ -259,6 +259,7 @@ public:
 
     void clear()
     {
+        bool sss = sizeof(ValueType_) == sizeof(ValueNode<KeyType_,ValueType_>);
         for( IndexType_ t = 0; t < _Cap; ++t )
         {
             buckets_[t].root_ = 0;
@@ -266,6 +267,23 @@ public:
             buckets_[t].maxson_ = 0;
         }
         hash_array_.clear();
+    }
+
+    ValueNode<KeyType_,ValueType_>* data()
+    {
+        return hash_array_.data();
+    }
+
+    void initFromBinaryData(ValueNode<KeyType_,ValueType_>* data)
+    {
+        hash_array_.resetMapFromBinary(data);
+        for(IndexType_ index = 0;index < _Cap;index++)
+        {
+            if(data[index].IsValid())
+            {
+                insert(data[index].Key(),data[index].value());
+            }
+        }
     }
 
     RbtHashMap()

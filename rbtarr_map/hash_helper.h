@@ -33,13 +33,13 @@ public:
         : root_(other.root_), node_array_(other.node_array_), data_array_(other.data_array_), nodelist_(other.nodelist_), curnode_(other.curnode_)
     {}
 
-    explicit node_list_iterator(IndexType_ proot_, node_type *parray_,ValueNode<ValueType_>* pdata_)
+    explicit node_list_iterator(IndexType_ proot_, node_type *parray_,ValueNode<KeyType_,ValueType_>* pdata_)
         : root_(proot_), node_array_(parray_), data_array_(pdata_), curnode_(NULL)
     {
         look_rbtree();
     }
 
-    explicit node_list_iterator(node_type* node,node_type *parray_,ValueNode<ValueType_>* pdata_)
+    explicit node_list_iterator(node_type* node,node_type *parray_,ValueNode<KeyType_,ValueType_>* pdata_)
         : root_(0), node_array_(parray_), data_array_(pdata_), curnode_(node)
     {
 
@@ -153,7 +153,7 @@ public:
 private:
     IndexType_                      root_;                //红黑树的根节点
     node_type*                      node_array_;              //节点所属的数组
-    ValueNode<ValueType_>*          data_array_;
+    ValueNode<KeyType_,ValueType_>*          data_array_;
     std::list<node_type*>           nodelist_;   //
     std::pair<KeyType_,ValueType_*> iteator_;
     node_type                       *curnode_;            //节点
@@ -162,7 +162,7 @@ private:
 /**
  * 内存管理器
  */
-template<class KeyType_, class ValueType_,typename IndexType_,std::size_t Cap_ = 0>
+template<typename KeyType_, typename ValueType_,typename IndexType_,std::size_t Cap_ = 0>
 class node_pool
 {
 public:
@@ -178,6 +178,7 @@ public:
     //构造函数
     node_pool()
     {
+        memset(data_array_,0,sizeof(ValueNode<KeyType_,ValueType_>) * Cap_);
         //构造空闲链表信息
         node_array_[0].clear();
         //设置前向节点为空
@@ -330,9 +331,14 @@ public:
         return iterator();
     }
 
-    char* resetMapFromBinary(char* data)
+    void resetMapFromBinary(ValueNode<KeyType_,ValueType_>* data)
     {
-        memcpy(data_array_,data,sizeof(ValueNode<ValueType_>) * Cap_);
+        memcpy(data_array_,data,sizeof(ValueNode<KeyType_,ValueType_>) * Cap_);
+    }
+
+    ValueNode<KeyType_,ValueType_>* data()
+    {
+        return  data_array_;
     }
 private:
     //申请空间
@@ -416,7 +422,7 @@ private:
     //这里为了序列化map的时候能够快速的序列化整个数据的内存块，把真正的数据和红黑树节点信息分成两个数组
     //可以相互通过同一个索引快速取到对应的信息
     node_type                   node_array_[Cap_];
-    ValueNode<ValueType_>       data_array_[Cap_];
+    ValueNode<KeyType_,ValueType_>       data_array_[Cap_];
 };
 }
 

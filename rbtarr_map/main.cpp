@@ -27,6 +27,17 @@ public:
     ~ValueType()
     {
     }
+
+    int Key()
+    {
+        return  a;
+    }
+
+    bool IsValid()
+    {
+        return  a >= 0;
+    }
+
     int a;
 };
 
@@ -38,18 +49,21 @@ int main()
     {
         testMap->insert(i * HASH_CONFLICT_RATE,ValueType(i * HASH_CONFLICT_RATE));
     }
-    testMap->insert(99999,ValueType(99999));
+    //testMap->insert(99999,ValueType(99999));
     RbtHashMap<int,ValueType,TEST_COUNT>* test1Map = new RbtHashMap<int,ValueType,TEST_COUNT>();
     //调用memcpy复制rtbhashmap,验证二进制可复制性
-    memcpy((void*)test1Map,(void*)testMap,sizeof(RbtHashMap<int,ValueType,TEST_COUNT>));
+    //memcpy((char*)test1Map,(char*)testMap,sizeof(RbtHashMap<int,ValueType,TEST_COUNT>));
+    test1Map->initFromBinaryData(testMap->data());
+    int same = memcmp((char*)test1Map,(char*)testMap,sizeof(RbtHashMap<int,ValueType,TEST_COUNT>));
     RbtHashMap<int,ValueType,TEST_COUNT>::iterator it = test1Map->begin();
+    RbtHashMap<int,ValueType,TEST_COUNT>::iterator it1 = test1Map->find(1);
     for(;it != test1Map->end();it++)
     {
         int a = it->second->a;
         std::cout << "it->first = " << it->first << " it->second = " << a << std::endl;
     }
 
-    printf("a = %d");
+    printf("same = %d",same);
     testMap->erase(HASH_CONFLICT_RATE * 1);
     std::cout << "Hello, World!" << std::endl;
     delete testMap;
