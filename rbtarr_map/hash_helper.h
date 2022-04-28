@@ -30,7 +30,7 @@ public:
     typedef std::pair<KeyType_,ValueType_*> &reference;
 
     node_list_iterator(const iterator_type &other)
-        : root_(other.root_), node_array_(other.node_array_), data_array_(other.data_array_), nodelist_(other.nodelist_), curnode_(other.curnode_)
+        : root_(other.root_), node_array_(other.node_array_), data_array_(other.data_array_), curnode_(other.curnode_)
     {}
 
     explicit node_list_iterator(IndexType_ proot_, node_type *parray_,ValueNode<KeyType_,ValueType_>* pdata_)
@@ -96,7 +96,6 @@ public:
     {
         if (this != &other) {
             node_array_ = other.node_array_;
-            nodelist_ = other.nodelist_;
             curnode_ = other.curnode_;
             root_ = other.root_;
         }
@@ -120,41 +119,45 @@ public:
         return 0;
     }
 
-    void look_rbtree()
-    {
-        if(nodelist_.size() <= 0)
-        {
-            nodelist_.clear();
-            tree_type rbtree(node_array_, data_array_, root_);
-            if(!rbtree.isEmpty())
-            {
-                rbtree.inOrder(nodelist_);
-            }
-        }
-        if(nodelist_.size() > 0)
-        {
-            curnode_ = nodelist_.front();
-            nodelist_.pop_front();
-            if(nodelist_.size() == 0)
-            {
-                root_ = curnode_->get_right();
-            }
-        }else
-        {
-            curnode_ = NULL;
-        }
-    }
-
     node_type* curNode()
     {
         return curnode_;
     }
 
 private:
+    void look_rbtree()
+    {
+        if(root_ == 0)
+        {
+            return;
+        }
+        if(curnode_ == NULL)
+        {
+            tree_type rbtree(node_array_, data_array_, root_);
+            curnode_ = rbtree.minimum();
+        }else
+        {
+            tree_type rbtree(node_array_, data_array_, root_);
+            node_type* oldNode = curnode_;
+            curnode_ = rbtree.successor(curnode_);
+            if(curnode_ == NULL)
+            {
+                if(oldNode->get_color() & RB_MAX_NODE)
+                {
+                    if(oldNode->get_right())
+                    {
+                        root_ = oldNode->get_right();
+                        tree_type newtree(node_array_, data_array_, root_);
+                        curnode_ = newtree.minimum();
+                    }
+                }
+            }
+        }
+    }
+private:
     IndexType_                      root_;                //红黑树的根节点
     node_type*                      node_array_;              //节点所属的数组
-    ValueNode<KeyType_,ValueType_>*          data_array_;
-    std::list<node_type*>           nodelist_;   //
+    ValueNode<KeyType_,ValueType_>* data_array_;
     std::pair<KeyType_,ValueType_*> iteator_;
     node_type                       *curnode_;            //节点
 };
