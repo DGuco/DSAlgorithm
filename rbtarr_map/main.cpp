@@ -58,18 +58,21 @@ int main()
     //test1Map->initFromBinaryData(testMap->data());
     int same = memcmp((char*)test1Map,(char*)testMap,sizeof(RbtHashMap<int,ValueType,TEST_COUNT>));
     RbtHashMap<int,ValueType,TEST_COUNT>::iterator it = test1Map->begin();
-    RbtHashMap<int,ValueType,TEST_COUNT>::iterator it1 = test1Map->find(4);
-    if(it1 == test1Map->end())
+    for(int index = 0;index < 100;index++)
     {
-        printf("find failed \n");
+        int key = rand() % TEST_COUNT;
+        test1Map->erase(key * HASH_CONFLICT_RATE);
+        stdmap.erase(key * HASH_CONFLICT_RATE);
+        printf("erase key = %d\n",key * HASH_CONFLICT_RATE);
     }
+
     for(;it != test1Map->end();it++)
     {
         int a = it->second->a;
         auto stdit = stdmap.find(it->first);
         if(stdit == stdmap.end())
         {
-            printf("test failed 00000000\n");
+            printf("test failed key = %d\n",it->first);
             exit(0);
         }else
         {
@@ -83,7 +86,7 @@ int main()
         printf("test failed 1111111\n");
         exit(0);
     }
-    printf("same = %d",same);
+    printf("same = %d\n",same);
     testMap->erase(HASH_CONFLICT_RATE * 1);
     std::cout << "Hello, World!" << std::endl;
     delete testMap;
