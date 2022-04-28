@@ -51,15 +51,18 @@ public:
 
     reference operator*()
     {
-        IndexType_ index = get_cur();
-        if(index >= 0 && index <= Cap_)
+        if(curnode_ != NULL)
         {
-            iteator_.first = curnode_->get_key();
-            iteator_.second = data_array_[index - 1].pointer();
-        }else
-        {
-            iteator_.first = curnode_->get_key();
-            iteator_.second = NULL;
+            IndexType_ index = curnode_->get_data();
+            if(index >= 0 && index <= Cap_)
+            {
+                iteator_.first = curnode_->get_key();
+                iteator_.second = data_array_[index - 1].pointer();
+            }else
+            {
+                iteator_.first = curnode_->get_key();
+                iteator_.second = NULL;
+            }
         }
         return iteator_;
     }
@@ -133,11 +136,11 @@ private:
         }
         if(curnode_ == NULL)
         {
-            tree_type rbtree(node_array_, data_array_, root_);
+            tree_type rbtree(node_array_, root_);
             curnode_ = rbtree.minimum();
         }else
         {
-            tree_type rbtree(node_array_, data_array_, root_);
+            tree_type rbtree(node_array_, root_);
             node_type* oldNode = curnode_;
             curnode_ = rbtree.successor(curnode_);
             if(curnode_ == NULL)
@@ -147,7 +150,7 @@ private:
                     if(oldNode->get_right())
                     {
                         root_ = oldNode->get_right();
-                        tree_type newtree(node_array_, data_array_, root_);
+                        tree_type newtree(node_array_, root_);
                         curnode_ = newtree.minimum();
                     }
                 }
@@ -217,9 +220,11 @@ public:
         node_array_[0].clear();
         //设置前向节点为空
         node_array_[0].set_prev(0);
+        node_array_[0].set_data(1);
         for (IndexType_ i = 1; i < Cap_; i++) {
             node_array_[i - 1].set_next(i + 1/*真正的索引+1*/);
             node_array_[i].clear();
+            node_array_[i].set_data(i + 1);
             node_array_[i].set_prev(i - 1 + 1/*真正的索引+1*/);
         }
         //设置后向节点为空
@@ -286,7 +291,7 @@ public:
 
     void updateValue(node_type* node,ValueType_ value)
     {
-        IndexType_ index = get_cur(node);
+        IndexType_ index = node->get_data();
         if(index > 0 && index <= Cap_)
         {
             //调用析构函数
@@ -294,9 +299,9 @@ public:
         }
     }
 
-    tree_type make_rbtree(std::size_t root)
+    tree_type make_rbtree(IndexType_ root)
     {
-        return tree_type(node_array_,data_array_,root);
+        return tree_type(node_array_,root);
     }
 
     iterator make_iterator(IndexType_ root)
@@ -352,7 +357,6 @@ private:
             return 0;
         }
         node_type *p = get_node(free_node_head_);
-        IndexType_ index = free_node_head_;
         if (p)
         {
             size_++;
@@ -360,6 +364,7 @@ private:
             //把空闲头结点指向当前空闲头结点的下一个节点
             free_node_head_ = p->get_next();
             p->set_key(v.first);
+            IndexType_ index = p->get_data();
             new(data_array_[index - 1].data) ValueType_(v.second);
             p->init_rb();
             return p;
@@ -376,7 +381,7 @@ private:
         {
             return;
         }
-        IndexType_ index = get_cur(node_);
+        IndexType_ index = node_->get_data();
         if(index > 0 && index <= Cap_)
         {
             //调用析构函数
