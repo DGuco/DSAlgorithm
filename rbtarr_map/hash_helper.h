@@ -382,6 +382,7 @@ private:
             //调用析构函数
             data_array_[index - 1].value().~ValueType_();
         }
+        size_--;
         free_node_head_ = get_cur(node_);
         //插入空闲链表头部
         insert_node(get_node(free_node_head_), node_);

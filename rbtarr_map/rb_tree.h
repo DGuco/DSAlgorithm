@@ -1037,7 +1037,10 @@ inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::rightOf(NodeType_
 {
     if(node == NULL) return  NULL;
     //如果是最大节点，则左子树为空(实际上不为空，为了方便遍历hash_map，左子树指向了hash_map红黑树链的下一个树的root节点)
-    if(node->get_color() == RB_NONE || node->get_color() & RB_MAX_NODE) return  NULL;
+    if(node->get_color() == RB_NONE || node->get_color() & RB_MAX_NODE)
+    {
+        return  NULL;
+    }
     return getNode(node->get_right());
 }
 

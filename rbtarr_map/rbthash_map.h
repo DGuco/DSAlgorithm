@@ -172,7 +172,7 @@ public:
 
     void erase( iterator it )
     {
-        if(it == hash_array_.end())
+        if(it == hash_array_.end() || it.curNode() == NULL)
         {
             return;
         }
@@ -190,34 +190,25 @@ public:
         IndexType_  nextRoot = 0;
         node_type* oldmin_node = NULL;
         node_type* oldmax_node = NULL;
+        oldmin_node = hash_array_.get_node(buckets_[bucket].minson_);
+        if(oldmin_node != NULL)
         {
-            oldmin_node = hash_array_.get_node(buckets_[bucket].minson_);
-            if(oldmin_node != NULL)
-            {
-                preRoot = oldmin_node->get_left();
-            }
-            oldmax_node = hash_array_.get_node(buckets_[bucket].maxson_);
-            if(oldmax_node != NULL)
-            {
-                nextRoot = oldmax_node->get_right();
-            }
+            preRoot = oldmin_node->get_left();
+            rb_tree.setLeft(oldmin_node,NULL);
+            rb_tree.setRbColor(oldmin_node,rb_tree.rbColorOf(oldmin_node));
+        }
+        oldmax_node  = hash_array_.get_node(buckets_[bucket].maxson_);
+        if(oldmax_node != NULL)
+        {
+            nextRoot = oldmax_node->get_right();
+            rb_tree.setRight(oldmax_node,NULL);
+            rb_tree.setRbColor(oldmax_node,rb_tree.rbColorOf(oldmax_node));
         }
         node_type* remove_node = rb_tree.remove(it.curNode());
-        if(remove_node == NULL)
-        {
-            return;
-        }
         if(!rb_tree.isEmpty())
         {
-            if(buckets_[bucket].minson_ == hash_array_.get_cur(remove_node))
-            {
-                updatePreTree(rb_tree,preRoot);
-            }
-
-            if(buckets_[bucket].maxson_  == hash_array_.get_cur(remove_node))
-            {
-                updateNextTree(rb_tree,nextRoot);
-            }
+            updatePreTree(rb_tree,preRoot);
+            updateNextTree(rb_tree,nextRoot);
 
             if(buckets_[bucket].root_ != rb_tree.root())
             {
