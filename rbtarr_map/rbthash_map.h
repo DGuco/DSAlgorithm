@@ -207,6 +207,8 @@ public:
         node_type* remove_node = rb_tree.remove(it.curNode());
         if(!rb_tree.isEmpty())
         {
+            //注意删除节点的时候即使删除的不是最小节点或或者最大节点也有可能引起最小节点和最大节点的索引发生变化(红黑树的调整策略导致)，
+            //所以删除后要重新设置bucket对应的minson和maxson对应的索引信息,而插入不一样，插入的新节点不会导致引起已经插入的节点信息发生变化
             updatePreTree(rb_tree,preRoot);
             updateNextTree(rb_tree,nextRoot);
 

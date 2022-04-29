@@ -77,6 +77,7 @@ int main()
         }else
         {
             stdmap.erase(it->first);
+            //test1Map->erase(it);
         }
         std::cout << "it->first = " << it->first << " it->second = " << a << std::endl;
     }
