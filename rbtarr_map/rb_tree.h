@@ -995,7 +995,6 @@ inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setRed(NodeType_* node)
     if(node)
     {
         //如果节点颜色变化，则说明树发生了调整，直接清除身上的最大节点和最小节点标记
-        node->set_color(RB_NONE);
         node->set_color(RB_RED);
     }
 }
@@ -1006,7 +1005,6 @@ inline void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::setBlack(NodeType_* nod
     if(node)
     {
         //如果节点颜色变化，则说明树发生了调整，直接清除身上的最大节点和最小节点标记
-        node->set_color(RB_NONE);
         node->set_color(RB_BLACK);
     }
 }

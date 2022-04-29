@@ -97,6 +97,7 @@ public:
         IndexType_  nextRoot = 0;
         node_type* oldmin_node = NULL;
         node_type* oldmax_node = NULL;
+        //因为调整树的过程中颜色会发生变化，颜色变化的时候会清除最小节点和最大节点的标识，因此额外的树链指针信息会影响数的调整，调整前先删除额外的扩展节点信息
         oldmin_node = hash_array_.get_node(buckets_[bucket].minson_);
         if(oldmin_node != NULL)
         {
@@ -190,6 +191,7 @@ public:
         IndexType_  nextRoot = 0;
         node_type* oldmin_node = NULL;
         node_type* oldmax_node = NULL;
+        //因为调整树的过程中颜色会发生变化，颜色变化的时候会清除最小节点和最大节点的标识，因此额外的树链指针信息会影响数的调整，调整前先删除额外的扩展节点信息
         oldmin_node = hash_array_.get_node(buckets_[bucket].minson_);
         if(oldmin_node != NULL)
         {
