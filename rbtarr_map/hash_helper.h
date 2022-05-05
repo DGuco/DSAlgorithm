@@ -144,6 +144,7 @@ private:
             curnode_ = rbtree.minimum();
         }else
         {
+            node_type* rootNode = get_node(root_);
             tree_type rbtree(node_array_, root_);
             node_type* oldNode = curnode_;
             curnode_ = rbtree.successor(curnode_);
@@ -153,6 +154,10 @@ private:
                 {
                     if(oldNode->get_right())
                     {
+                        if(oldNode->get_right() == root_)
+                        {
+                            int a = 1;
+                        }
                         root_ = oldNode->get_right();
                         tree_type newtree(node_array_, root_);
                         curnode_ = newtree.minimum();
@@ -188,7 +193,6 @@ public:
     //构造函数
     node_pool()
     {
-        init();
     }
 
     //析构函数
@@ -200,15 +204,10 @@ public:
     //清理
     void clear()
     {
-        for(int index = 0;index < Cap_;index++)
+        for(int index = 0;index < size_;index++)
         {
             data_array_[index].value().~ValueType_();
         }
-        init();
-    }
-
-    void init()
-    {
         //构造空闲链表信息
         node_array_[0].clear();
         //设置前向节点为空
@@ -228,6 +227,7 @@ public:
         //默认数组首个元素即可用节点链表的头结点
         free_node_head_ = 1;
     }
+
     //内存池当前大小
     std::size_t size() const
     {

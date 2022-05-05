@@ -1,8 +1,7 @@
 #include <iostream>
 #include <list>
-#include <map>
+#include <unordered_map>
 #include "rbthash_map.h"
-#include "rb_tree.h"
 
 /**
  * https://zhuanlan.zhihu.com/p/31805309
@@ -16,17 +15,20 @@
 
 using namespace rbt_hash;
 #define HASH_CONFLICT_RATE 4   //hash冲突倍率
-#define TEST_COUNT 1000
+#define TEST_COUNT 100000
+#define REMOVE_COUNT 50000
 
 class ValueType
 {
 public:
     ValueType(int value) : a(value)
     {
+
     }
 
     ~ValueType()
     {
+
     }
 
     int Key()
@@ -42,57 +44,121 @@ public:
     int a;
 };
 
-int main()
+void testInsert()
 {
+    printf("==========================test insert start===================================\n");
     RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
-    std::map<int,ValueType> stdmap;
-    for(int i = 0;i < TEST_COUNT;i++)
+    std::unordered_map<int,ValueType> stdmap;
+    while(true)
     {
-        testMap->insert(i * HASH_CONFLICT_RATE,ValueType(i * HASH_CONFLICT_RATE));
-        stdmap.insert(std::make_pair(i * HASH_CONFLICT_RATE,ValueType(i * HASH_CONFLICT_RATE)));
-    }
-    //testMap->insert(99999,ValueType(99999));
-    RbtHashMap<int,ValueType,TEST_COUNT>* test1Map = new RbtHashMap<int,ValueType,TEST_COUNT>();
-    //调用memcpy复制rtbhashmap,验证二进制可复制性
-    memcpy((char*)test1Map,(char*)testMap,sizeof(RbtHashMap<int,ValueType,TEST_COUNT>));
-    //test1Map->initFromBinaryData(testMap->data());
-    int same = memcmp((char*)test1Map,(char*)testMap,sizeof(RbtHashMap<int,ValueType,TEST_COUNT>));
-    RbtHashMap<int,ValueType,TEST_COUNT>::iterator it = test1Map->begin();
-    for(int index = 0;index < 100;index++)
-    {
-        int key = rand() % TEST_COUNT;
-        test1Map->erase(key * HASH_CONFLICT_RATE);
-        stdmap.erase(key * HASH_CONFLICT_RATE);
-        printf("erase key = %d\n",key * HASH_CONFLICT_RATE);
-    }
-
-    for(;it != test1Map->end();it++)
-    {
-        int a = it->second->a;
-        auto stdit = stdmap.find(it->first);
-        if(stdit == stdmap.end())
+        int key = rand();
+        if(stdmap.find(key) == stdmap.end())
         {
-            printf("test failed key = %d\n",it->first);
-            exit(0);
-        }else
-        {
-            stdmap.erase(it->first);
-            //test1Map->erase(it);
+            stdmap.insert(std::make_pair(key,ValueType(key)));
+            testMap->insert(key,key);
         }
-        std::cout << "it->first = " << it->first << " it->second = " << a << std::endl;
+
+        if(stdmap.size() >= TEST_COUNT)
+        {
+            break;
+        }
     }
 
-    if(stdmap.size() > 0)
+    if(stdmap.size() != testMap->size())
     {
-        printf("test failed 1111111\n");
+        printf("test insert failed stdsize = %d,rbtsize = %d\n",stdmap.size(),testMap->size());
         exit(0);
     }
-    printf("same = %d\n",same);
-    testMap->erase(HASH_CONFLICT_RATE * 1);
-    std::cout << "Hello, World!" << std::endl;
+
+    RbtHashMap<int,ValueType,TEST_COUNT>::iterator it = testMap->begin();
+    for(;it != testMap->end();it++)
+    {
+        std::unordered_map<int,ValueType>::iterator  stdit = stdmap.find(it->first);
+        if(stdit == stdmap.end())
+        {
+            printf("test insert failed never insert key = %d\n",it->first);
+            exit(0);
+        }
+        if(it->second->a != stdit->second.a)
+        {
+            printf("test insert failed stdvalue= %d,rbtvalue = %d\n",stdit->second.a,it->second->a);
+            exit(0);
+        }
+    }
+    printf("==========================test insert done===================================\n");
     delete testMap;
     testMap = NULL;
-    delete test1Map;
-    test1Map = NULL;
-    return 0;
+}
+
+void testremove()
+{
+    printf("==========================test remove begin===================================\n");
+    RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
+    std::unordered_map<int,ValueType> stdmap;
+    while(true)
+    {
+        int key = rand();
+        if(stdmap.find(key) == stdmap.end())
+        {
+            stdmap.insert(std::make_pair(key,ValueType(key)));
+            testMap->insert(key,key);
+        }
+
+        if(stdmap.size() >= TEST_COUNT)
+        {
+            break;
+        }
+    }
+
+    std::unordered_map<int,ValueType>::iterator stdit = stdmap.begin();
+    int count = 0;
+    for(;stdit != stdmap.end();)
+    {
+        if(!testMap->erase(stdit->first))
+        {
+            printf("test remove failed never remove key = %d\n",stdit->first);
+            exit(0);
+        }
+        stdit = stdmap.erase(stdit);
+        count++;
+        if(count >= REMOVE_COUNT)
+        {
+            break;
+        }
+    }
+
+    if(stdmap.size() != testMap->size())
+    {
+        printf("test remove failed stdsize = %d,rbtsize = %d\n",stdmap.size(),testMap->size());
+        exit(0);
+    }
+
+    RbtHashMap<int,ValueType,TEST_COUNT>::iterator it = testMap->begin();
+    count = 0;
+    for(;it != testMap->end();it++)
+    {
+        count++;
+        std::unordered_map<int,ValueType>::iterator  stdit = stdmap.find(it->first);
+        if(stdit == stdmap.end())
+        {
+            printf("test remove failed never lost key = %d\n",it->first);
+            exit(0);
+        }
+        if(it->second->a != stdit->second.a)
+        {
+            printf("test remove failed stdvalue= %d,rbtvalue = %d\n",stdit->second.a,it->second->a);
+            exit(0);
+        }
+    }
+    printf("==========================test remove done===================================\n");
+    delete testMap;
+    testMap = NULL;
+}
+
+int main()
+{
+    testInsert();
+    testremove();
+    std::cout << "Test Done,Hello, World!" << std::endl;
+
 }

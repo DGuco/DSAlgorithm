@@ -15,17 +15,10 @@ using namespace std;
 
 namespace rbt_hash
 {
-template <class KeyType_, class ValueType_, std::size_t _Cap = 0>
+template <class KeyType_, class ValueType_, std::size_t _Cap,class IndexType_ = unsigned int>
 class RbtHashMap
 {
 public:
-#if _Cap <= USHRT_MAX - 1
-    typedef unsigned short IndexType_;
-#elif _Cap <= UINT_MAX - 1
-    typedef unsigned int IndexType_;
-#else
-    typedef unsigned long long IndexType_;
-#endif
     typedef node_pool<KeyType_,ValueType_,IndexType_, _Cap> hash_array;
     typedef typename hash_array::tree_type tree_type;
     typedef typename hash_array::class_type class_type;
@@ -171,11 +164,11 @@ public:
         return hash_array_.make_iterator(rb_tree.search(k));
     }
 
-    void erase( iterator it )
+    bool erase( iterator it )
     {
         if(it == hash_array_.end() || it.curNode() == NULL)
         {
-            return;
+            return false;
         }
 
         hash_function::hash<KeyType_> hash_func;
@@ -184,7 +177,7 @@ public:
         //该bucket是空的
         if ( rb_tree.isEmpty())
         {
-            return;
+            return false;
         }
         //先记录并清除对应的前后的rbtree的信息，erase节点后，该信息可能丢失
         IndexType_  preRoot = 0;
@@ -249,16 +242,16 @@ public:
             }
         }
         hash_array_.deallocate_node(remove_node);
+        return true;
     }
 
-    void erase( const KeyType_& k )
+    bool erase( const KeyType_& k )
     {
         return erase(find(k));
     }
 
     void clear()
     {
-        bool sss = sizeof(ValueType_) == sizeof(ValueNode<KeyType_,ValueType_>);
         for( IndexType_ t = 0; t < _Cap; ++t )
         {
             buckets_[t].root_ = 0;
@@ -287,12 +280,9 @@ public:
 
     RbtHashMap()
     {
-        if(DEBUG_RB_TREE)
-        {
-            printf("RbtHashMap index size = %ld\n",sizeof(IndexType_));
-        }
         clear();
     }
+
     ~RbtHashMap()
     {
         clear();
