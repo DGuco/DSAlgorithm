@@ -22,6 +22,7 @@ using namespace std;
 
 void testRBTree()
 {
+    printf("==========================test rbtree start===================================\n");
     // 设置种子
     srand( (unsigned)time( NULL ) );
     int *a= new int[RB_COUNT];
@@ -110,6 +111,7 @@ void testRBTree()
     printf("== test rbtree remove done\n");
     delete[] node;
     delete [] a;
+    printf("==========================test rbtree done===================================\n");
 }
 
 class ValueType
