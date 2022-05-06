@@ -13,7 +13,7 @@
 #include <list>
 using namespace std;
 
-#define RB_TREE_JAVA 0
+#define RB_TREE_JAVA 1
 #define DEBUG_RB_TREE 0
 #define NodeType_ RBTNode<KeyType_,INDEX_TYPE>
 #define ARRAY_OFFSET(array,node) (node - array + 1)   //这里取真实的索引+1作为数组索引[1,Cap_]
@@ -113,6 +113,7 @@ public:
     {
         set_next(0);
         set_prev(0);
+        set_parent(0);
     }
 
 public:
@@ -769,7 +770,7 @@ void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::removeFixUp(NodeType_ *node)
                     setBlack(rightOf(other));
                     setRed(other);
                     leftRotate(other);
-                    other = leftOf(parentOf(other));
+                    other = leftOf(parentOf(node));
                 }
                 // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
                 setRbColor(other, rbColorOf(parentOf(node)));
@@ -888,15 +889,18 @@ void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::removeFixUp(NodeType_ *node, N
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
 NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
 {
+    /**
+     * 两个删除逻辑最重要的区别，java的实现中，假如你要删除a节点，实际上有可能删除的不是a节点，而是b节点，只不过在删除之前会把b节点的内容复制给a，保留a的颜色，
+     * 但是第二种实现删除a的过程是通过调整父子节点关系来实现不会有节点的内容复制过程，注意这个很关键，如果选用java的实现删除的时候不光影响红黑树本身的节点关系，
+     * 还会打乱节点内部对应的数据引用关系(上层hashmap中节点a中保存的数据引用本身是a删除后红黑树节点a对应的数据引用有可能不再是a而是b)
+     */
     if(RB_TREE_JAVA)
     {
         // 被删除节点的"左右孩子都不为空"的情况
         if ((leftOf(node) != NULL) && (rightOf(node) != NULL))
         {
             //寻找删除节点的后继节点,即查找"红黑树中数据值大于该结点"的"最小结点"。
-            NodeType_* succNode = rightOf(node);
-            while (leftOf(succNode)!= NULL)
-                succNode = leftOf(succNode);
+            NodeType_* succNode = successor(node);
             /**
              * 通过把后继节点的内容复制给要删除的节点,让后继节点处于被删除node的位置，且保留node的color(根据后继节点的特性可以知道，把后继
              * 节点的内容复制到删除节点的位置上并不破坏红黑树二叉搜索树的特性)，但是有可能破坏红黑树的平衡特性,下面只要删除后继节点然后调整
@@ -926,6 +930,7 @@ NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
             else
                 setRight(parentOf(node), replacement);
 
+            node->dis_from_list();
             // Fix replacement
             if (isBlack(node))
                 removeFixUp(replacement);

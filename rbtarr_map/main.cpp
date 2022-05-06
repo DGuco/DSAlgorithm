@@ -268,7 +268,7 @@ void testremove()
 int main()
 {
     testRBTree();
-   // testInsert();
-   // testremove();
+    testInsert();
+    testremove();
     std::cout << "Test Done,Hello, World!" << std::endl;
 }
