@@ -18,7 +18,7 @@ using namespace rbt_hash;
 using namespace std;
 #define TEST_COUNT 1000000
 #define REMOVE_COUNT 500000
-#define RB_COUNT 10000
+#define RB_COUNT 5000
 
 void testRBTree()
 {
