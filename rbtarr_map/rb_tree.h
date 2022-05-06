@@ -13,7 +13,7 @@
 #include <list>
 using namespace std;
 
-#define RB_TREE_JAVA 1
+#define RB_TREE_JAVA 0
 #define DEBUG_RB_TREE 0
 #define NodeType_ RBTNode<KeyType_,INDEX_TYPE>
 #define ARRAY_OFFSET(array,node) (node - array + 1)   //这里取真实的索引+1作为数组索引[1,Cap_]

@@ -62,11 +62,16 @@ public:
                 return false;
             }
             rb_tree.insert(new_node);
+            int oldhead = hash_array_.rb_tree_head_bucket();
             //设置root信息
             buckets_[bucket].root_ = rb_tree.root();
             //新的rbtree成为新的树链头部,重新设置树链的前后指针
             buckets_[bucket].prebucket_ = 0;
-            buckets_[bucket].nextbucket_ = hash_array_.rb_tree_head_bucket();
+            buckets_[bucket].nextbucket_ = oldhead;
+            if(oldhead > 0 && oldhead <= _Cap)
+            {
+                buckets_[oldhead - 1].prebucket_ = bucket + 1;
+            }
             hash_array_.set_rb_tree_head_bucket(bucket + 1);
             return true;
         }
