@@ -2,6 +2,7 @@
 #include <list>
 #include <unordered_map>
 #include "rbthash_map.h"
+#include "rb_tree.h"
 
 /**
  * https://zhuanlan.zhihu.com/p/31805309
@@ -14,9 +15,102 @@
  */
 
 using namespace rbt_hash;
-#define HASH_CONFLICT_RATE 4   //hash冲突倍率
-#define TEST_COUNT 100000
-#define REMOVE_COUNT 50000
+using namespace std;
+#define TEST_COUNT 1000000
+#define REMOVE_COUNT 500000
+#define RB_COUNT 1000
+
+void testRBTree()
+{
+    // 设置种子
+    srand( (unsigned)time( NULL ) );
+    int *a= new int[RB_COUNT];
+    RBTNode<int,unsigned int>* node = new RBTNode<int,unsigned int>[RB_COUNT];
+    RBTree<int,int,unsigned int,RB_COUNT>tree(node,0);
+    cout << "== 原始数据: ";
+    int i = 0;
+    std::unordered_map<int,int> stdmap;
+    for(i=0; i < RB_COUNT; i++)
+    {
+        int key = rand();
+        while (1)
+        {
+            if(stdmap.find(key) == stdmap.end())
+            {
+                break;
+            }else
+            {
+                key = rand();
+            }
+        }
+        a[i] = key;
+        stdmap.insert(std::make_pair(key,1));
+        cout << a[i] <<" ";
+        node[i].init_rb();
+        node[i].set_key(a[i]);
+    }
+    cout << endl;
+
+    for(i=0; i<RB_COUNT; i++)
+    {
+        tree.insert(&node[i]);
+        if(!tree.isRBTree())
+        {
+            tree.print();
+            printf("test rbtree insert failed\n");
+            exit(0);
+        }
+    }
+
+    cout << "== 前序遍历: ";
+    std::list<RBTNode<int,unsigned int>*> resList;
+    resList.clear();
+    tree.preOrder(resList);
+    std::list<RBTNode<int,unsigned int>*>::iterator it = resList.begin();
+    for(;it != resList.end();it++)
+    {
+        cout << (*it)->get_key() << " ";
+    }
+    cout << "\n== 中序遍历: ";
+    resList.clear();
+    tree.inOrder(resList);
+    it = resList.begin();
+    for(;it != resList.end();it++)
+    {
+        cout << (*it)->get_key() << " ";
+    }
+    cout << "\n== 后序遍历: ";
+    resList.clear();
+    tree.postOrder(resList);
+    it = resList.begin();
+    for(;it != resList.end();it++)
+    {
+        cout << (*it)->get_key() << " ";
+    }
+    cout << endl;
+    cout << "== 最小值: " << tree.minimum()->get_key() << endl;
+    cout << "== 最大值: " << tree.maximum()->get_key() << endl;
+//    cout << "== 树的详细信息: " << endl;
+//    tree.print();
+    printf("== test rbtree insert done\n");
+
+    for(i=0; i<RB_COUNT; i++)
+    {
+        tree.remove(a[i]);
+//        cout << "== 删除节点: " << a[i] << endl;
+//        cout << "== 树的详细信息: " << endl;
+//        tree.print();
+        if(!tree.isRBTree())
+        {
+            tree.print();
+            printf("test rbtree remove failed\n");
+            exit(0);
+        }
+    }
+    printf("== test rbtree remove done\n");
+    delete[] node;
+    delete [] a;
+}
 
 class ValueType
 {
@@ -46,6 +140,8 @@ public:
 
 void testInsert()
 {
+    // 设置种子
+    srand( (unsigned)time( NULL ) );
     printf("==========================test insert start===================================\n");
     RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
     std::unordered_map<int,ValueType> stdmap;
@@ -84,6 +180,13 @@ void testInsert()
             printf("test insert failed stdvalue= %d,rbtvalue = %d\n",stdit->second.a,it->second->a);
             exit(0);
         }
+        //printf("it->first = %d,it->second = %d\n",it->first,it->second->a);
+        stdmap.erase(it->first);
+    }
+    if(stdmap.size() > 0)
+    {
+        printf("test insert failed look map not all,last =  %d\n",stdmap.size());
+        exit(0);
     }
     printf("==========================test insert done===================================\n");
     delete testMap;
@@ -92,6 +195,8 @@ void testInsert()
 
 void testremove()
 {
+    // 设置种子
+    srand( (unsigned)time( NULL ) );
     printf("==========================test remove begin===================================\n");
     RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
     std::unordered_map<int,ValueType> stdmap;
@@ -149,16 +254,21 @@ void testremove()
             printf("test remove failed stdvalue= %d,rbtvalue = %d\n",stdit->second.a,it->second->a);
             exit(0);
         }
+        stdmap.erase(it->first);
+    }
+    if(stdmap.size() > 0)
+    {
+        printf("test remove failed look map not all,last =  %d\n",stdmap.size());
+        exit(0);
     }
     printf("==========================test remove done===================================\n");
     delete testMap;
     testMap = NULL;
 }
-
 int main()
 {
-    testInsert();
-    testremove();
+    testRBTree();
+   // testInsert();
+   // testremove();
     std::cout << "Test Done,Hello, World!" << std::endl;
-
 }

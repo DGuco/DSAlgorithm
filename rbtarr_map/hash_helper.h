@@ -16,6 +16,14 @@
 namespace rbt_hash
 {
 
+template<typename IndexType_>
+struct bucket_type
+{
+    IndexType_ root_;  			    //相同bucket rbtree根节点索引
+    IndexType_ prebucket_;  		//pre  bucket
+    IndexType_ nextbucket_;  		//next bucket
+};
+
 /**
  *迭代器class
 * */
@@ -30,23 +38,23 @@ public:
     typedef std::pair<KeyType_,ValueType_*> &reference;
 
     node_list_iterator(const iterator_type &other)
-        : root_(other.root_), node_array_(other.node_array_), data_array_(other.data_array_), curnode_(other.curnode_)
+        : bucket_(other.bucket_), node_array_(other.node_array_), data_array_(other.data_array_), bucket_array_(other.bucket_array_), curnode_(other.curnode_)
     {}
 
-    explicit node_list_iterator(IndexType_ proot_, node_type *parray_,ValueNode<KeyType_,ValueType_>* pdata_)
-        : root_(proot_), node_array_(parray_), data_array_(pdata_), curnode_(NULL)
+    explicit node_list_iterator(IndexType_ bucket_, node_type *parray_,ValueNode<KeyType_,ValueType_>* pdata_,bucket_type<IndexType_>* pbucket_)
+        : bucket_(bucket_), node_array_(parray_), data_array_(pdata_), bucket_array_(pbucket_), curnode_(NULL)
     {
         look_rbtree();
     }
 
-    explicit node_list_iterator(node_type* node,node_type *parray_,ValueNode<KeyType_,ValueType_>* pdata_)
-        : root_(0), node_array_(parray_), data_array_(pdata_), curnode_(node)
+    explicit node_list_iterator(node_type* node,node_type *parray_,ValueNode<KeyType_,ValueType_>* pdata_,bucket_type<IndexType_>* pbucket_)
+        : bucket_(0), node_array_(parray_), data_array_(pdata_), bucket_array_(pbucket_), curnode_(node)
     {
 
     }
 
     node_list_iterator()
-        : root_(0), node_array_(NULL), data_array_(NULL), curnode_(NULL)
+        : bucket_(0), node_array_(NULL), data_array_(NULL), bucket_array_(NULL), curnode_(NULL)
     {}
 
     reference operator*()
@@ -104,7 +112,7 @@ public:
         {
             node_array_ = other.node_array_;
             curnode_ = other.curnode_;
-            root_ = other.root_;
+            bucket_ = other.bucket_;
         }
         return *this;
     }
@@ -134,43 +142,49 @@ public:
 private:
     void look_rbtree()
     {
-        if(root_ == 0)
+        //没有可遍历的节点了
+        if(bucket_ <= 0 || bucket_ > Cap_)
         {
+            curnode_ = NULL;
             return;
         }
+        //寻找第一个节点,从树的最小节点开始遍历每一个树的所有节点
         if(curnode_ == NULL)
         {
-            tree_type rbtree(node_array_, root_);
+            bucket_type<IndexType_> bucket = bucket_array_[bucket_ - 1];
+            tree_type rbtree(node_array_, bucket.root_);
             curnode_ = rbtree.minimum();
         }else
         {
-            node_type* rootNode = get_node(root_);
-            tree_type rbtree(node_array_, root_);
-            node_type* oldNode = curnode_;
+            bucket_type<IndexType_> bucket = bucket_array_[bucket_ - 1];
+            tree_type rbtree(node_array_, bucket.root_);
             curnode_ = rbtree.successor(curnode_);
+            //当前的树遍历完了
             if(curnode_ == NULL)
             {
-                if(oldNode->get_color() & RB_MAX_NODE)
+                //遍历下一个树
+                bucket_ = bucket_array_[bucket_ - 1].nextbucket_;
+                if(bucket_ > 0 && bucket_ <= Cap_)
                 {
-                    if(oldNode->get_right())
-                    {
-                        if(oldNode->get_right() == root_)
-                        {
-                            int a = 1;
-                        }
-                        root_ = oldNode->get_right();
-                        tree_type newtree(node_array_, root_);
-                        curnode_ = newtree.minimum();
-                    }
+                    bucket = bucket_array_[bucket_ - 1];
+                    tree_type newtree(node_array_, bucket.root_);
+                    curnode_ = newtree.minimum();
+                    return;
+                }else
+                {
+                    bucket_ = 0;
+                    curnode_ = NULL;
+                    return;
                 }
             }
         }
     }
 private:
-    IndexType_                      root_;                //红黑树的根节点
-    node_type*                      node_array_;              //节点所属的数组
-    ValueNode<KeyType_,ValueType_>* data_array_;
-    std::pair<KeyType_,ValueType_*> iteator_;
+    IndexType_                      bucket_;                //红黑树的根节点
+    node_type*                      node_array_;          //节点所属的数组
+    ValueNode<KeyType_,ValueType_>* data_array_;          //数据数组指针
+    bucket_type<IndexType_>*        bucket_array_;        //hash数据数组指针
+    std::pair<KeyType_,ValueType_*> iteator_;             //当前节点
     node_type                       *curnode_;            //节点
 };
 
@@ -223,7 +237,7 @@ public:
         node_array_[Cap_ - 1].set_next(0);
         size_ = 0;
         //已用的节点链表头节点的索引
-        rb_tree_head_root_ = 0;
+        rb_tree_head_bucket_ = 0;
         //默认数组首个元素即可用节点链表的头结点
         free_node_head_ = 1;
     }
@@ -296,30 +310,30 @@ public:
         return tree_type(node_array_,root);
     }
 
-    iterator make_iterator(IndexType_ root)
+    iterator make_iterator(IndexType_ root,bucket_type<IndexType_>* pbucket)
     {
-        return iterator(root,node_array_,data_array_);
+        return iterator(root,node_array_,data_array_,pbucket);
     }
 
-    iterator make_iterator(node_type* node)
+    iterator make_iterator(node_type* node,bucket_type<IndexType_>* pbucket)
     {
-        return iterator(node,node_array_,data_array_);
+        return iterator(node,node_array_,data_array_,pbucket);
     }
 
-    void set_rb_tree_head_root(IndexType_ value)
+    void set_rb_tree_head_bucket(IndexType_ value)
     {
-        rb_tree_head_root_ = value;
+        rb_tree_head_bucket_ = value;
     }
 
-    IndexType_ rb_tree_head_root()
+    IndexType_ rb_tree_head_bucket()
     {
-        return rb_tree_head_root_;
+        return rb_tree_head_bucket_;
     }
     // 下面为访问已经分配对象的iterator
-    iterator begin()
+    iterator begin(bucket_type<IndexType_>* pbucket)
     {
-        if (rb_tree_head_root_ != 0) {
-            return iterator(rb_tree_head_root_, node_array_,data_array_);
+        if (rb_tree_head_bucket_ != 0) {
+            return iterator(rb_tree_head_bucket_, node_array_, data_array_,pbucket);
         }
         else {
             return end();
@@ -421,7 +435,7 @@ private:
     }
 private:
     IndexType_                  size_;                            //内存池已用数量
-    IndexType_                  rb_tree_head_root_;               //红黑树链的头的根节点索引
+    IndexType_                  rb_tree_head_bucket_;             //红黑树链的头的根节点索引
     IndexType_                  free_node_head_;                  //空闲的节点链表头节点的索引
     //这里为了序列化map的时候能够快速的序列化整个数据的内存块，把真正的数据和红黑树节点信息分成两个数组
     //可以相互通过同一个索引快速取到对应的信息

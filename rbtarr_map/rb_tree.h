@@ -13,7 +13,7 @@
 #include <list>
 using namespace std;
 
-#define RB_TREE_JAVA 1
+#define RB_TREE_JAVA 0
 #define DEBUG_RB_TREE 0
 #define NodeType_ RBTNode<KeyType_,INDEX_TYPE>
 #define ARRAY_OFFSET(array,node) (node - array + 1)   //这里取真实的索引+1作为数组索引[1,Cap_]
@@ -21,10 +21,8 @@ using namespace std;
 enum RBTColor
 {
     RB_NONE = 0,
-    RB_MIN_NODE = 0X1,
-    RB_MAX_NODE = 0X2,
-    RB_RED = 0X4,
-    RB_BLACK = 0X8,
+    RB_RED = 1,
+    RB_BLACK = 2,
 };
 
 template<typename KeyType_,typename T>
@@ -189,6 +187,7 @@ private:
     void insertFixUp(NodeType_ *node);
     // 删除修正函数
     void removeFixUp(NodeType_ *node);
+    void removeFixUp(NodeType_ *node, NodeType_ *parent);
     // 打印红黑树
     void print(NodeType_ *tree, KeyType_ key, int direction);
 public:
@@ -786,6 +785,100 @@ void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::removeFixUp(NodeType_ *node)
 }
 
 /*
+ * 红黑树删除修正函数
+ *
+ * 在从红黑树中删除插入节点之后(红黑树失去平衡)，再调用该函数；
+ * 目的是将它重新塑造成一颗红黑树。
+ *
+ * 参数说明：
+ *     root 红黑树的根
+ *     node 待修正的节点
+ */
+template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
+void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::removeFixUp(NodeType_ *node, NodeType_ *parent)
+{
+    NodeType_ *other;
+    while ((!node || isBlack(node)) && curOf(node) != m_Root)
+    {
+        if (leftOf(parent) == node)
+        {
+            other = rightOf(parent);
+            if (isRed(other))
+            {
+                // Case 1: x的兄弟w是红色的
+                setBlack(other);
+                setRed(parent);
+                leftRotate(parent);
+                other = rightOf(parent);
+            }
+            if (isBlack(leftOf(other)) && isBlack(rightOf(other)))
+            {
+                // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
+                setRed(other);
+                node = parent;
+                parent = parentOf(node);
+            }
+            else
+            {
+                if (isBlack(rightOf(other)))
+                {
+                    // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
+                    setBlack(leftOf(other));
+                    setRed(other);
+                    rightRotate(other);
+                    other = rightOf(parent);
+                }
+                // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
+                setRbColor(other, rbColorOf(parent));
+                setBlack(parent);
+                setBlack(rightOf(other));
+                leftRotate(parent);
+                node = getNode(m_Root);
+                break;
+            }
+        }
+        else
+        {
+            other = leftOf(parent);
+            if (isRed(other))
+            {
+                // Case 1: x的兄弟w是红色的
+                setBlack(other);
+                setRed(parent);
+                rightRotate(parent);
+                other = leftOf(parent);
+            }
+            if (isBlack(leftOf(other)) && isBlack(rightOf(other)))
+            {
+                // Case 2: x的兄弟w是黑色，且w的俩个孩子也都是黑色的
+                setRed(other);
+                node = parent;
+                parent = parentOf(node);
+            }
+            else
+            {
+                if (isBlack(leftOf(other)))
+                {
+                    // Case 3: x的兄弟w是黑色的，并且w的左孩子是红色，右孩子为黑色。
+                    setBlack(rightOf(other));
+                    setRed(other);
+                    leftRotate(other);
+                    other = leftOf(parent);
+                }
+                // Case 4: x的兄弟w是黑色的；并且w的右孩子是红色的，左孩子任意颜色。
+                setRbColor(other, rbColorOf(parent));
+                setBlack(parent);
+                setBlack(leftOf(other));
+                rightRotate(parent);
+                node = getNode(m_Root);
+                break;
+            }
+        }
+    }
+    if (node)
+        setBlack(node);
+}
+/*
  * 删除结点(node)，并返回被删除的结点
  *
  * 参数说明：
@@ -795,70 +888,161 @@ void RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::removeFixUp(NodeType_ *node)
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
 NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::remove(NodeType_ *node)
 {
-    // 被删除节点的"左右孩子都不为空"的情况
-    if ((leftOf(node) != NULL) && (rightOf(node) != NULL))
+    if(RB_TREE_JAVA)
     {
-        //寻找删除节点的后继节点,即查找"红黑树中数据值大于该结点"的"最小结点"。
-        NodeType_* succNode = rightOf(node);
-        while (leftOf(succNode)!= NULL)
-            succNode = leftOf(succNode);
-        /**
-         * 通过把后继节点的内容复制给要删除的节点,让后继节点处于被删除node的位置，且保留node的color(根据后继节点的特性可以知道，把后继
-         * 节点的内容复制到删除节点的位置上并不破坏红黑树二叉搜索树的特性)，但是有可能破坏红黑树的平衡特性,下面只要删除后继节点然后调整
-         * 红黑树的平衡就可以了
-         */
-        KeyType_    key = node->get_key();
-        INDEX_TYPE  data = node->get_data();
-        node->set_key(succNode->get_key());
-        node->set_data(succNode->get_data());
-        succNode->set_key(key);
-        succNode->set_data(data);
-        //把要删除的节点换位后继节点,准备删除后继节点
-        node = succNode;
-    }
-
-    //这里不可能左右都不为空，因为如果左右都不为空删除的节点在前面会转为节点的后继节点（该节点的左节点肯定为空）
-    NodeType_* replacement = (leftOf(node) != NULL) ? leftOf(node) : rightOf(node);
-    //如果删除的节点有子节点
-    if(replacement != NULL)
-    {
-        //重置删除后的父子节点关系
-        setParent(replacement, parentOf(node));
-        if (parentOf(node) == NULL)
-            m_Root = curOf(replacement); //如果要删除的节点没有父节点，则他的子节点成为新的根节点
-        else if (node == leftOf(parentOf(node)))
-            setLeft(parentOf(node), replacement); //是父节点的左子树
-        else
-            setRight(parentOf(node), replacement);
-
-        // Fix replacement
-        if (isBlack(node))
-            removeFixUp(replacement);
-
-    }else if(parentOf(node) == NULL)//如果要删除的节点没有父节点，则删除的节点是根节点,直接把根节点清掉返回
-    {
-        m_Root = 0;
-    }else //No children. Use self as phantom replacement and unlink.
-    {
-        if(isBlack(node))
+        // 被删除节点的"左右孩子都不为空"的情况
+        if ((leftOf(node) != NULL) && (rightOf(node) != NULL))
         {
-            removeFixUp(node);
+            //寻找删除节点的后继节点,即查找"红黑树中数据值大于该结点"的"最小结点"。
+            NodeType_* succNode = rightOf(node);
+            while (leftOf(succNode)!= NULL)
+                succNode = leftOf(succNode);
+            /**
+             * 通过把后继节点的内容复制给要删除的节点,让后继节点处于被删除node的位置，且保留node的color(根据后继节点的特性可以知道，把后继
+             * 节点的内容复制到删除节点的位置上并不破坏红黑树二叉搜索树的特性)，但是有可能破坏红黑树的平衡特性,下面只要删除后继节点然后调整
+             * 红黑树的平衡就可以了
+             */
+            KeyType_    key = node->get_key();
+            INDEX_TYPE  data = node->get_data();
+            node->set_key(succNode->get_key());
+            node->set_data(succNode->get_data());
+            succNode->set_key(key);
+            succNode->set_data(data);
+            //把要删除的节点换位后继节点,准备删除后继节点
+            node = succNode;
         }
 
-        if(parentOf(node) != NULL)
+        //这里不可能左右都不为空，因为如果左右都不为空删除的节点在前面会转为节点的后继节点（该节点的左节点肯定为空）
+        NodeType_* replacement = (leftOf(node) != NULL) ? leftOf(node) : rightOf(node);
+        //如果删除的节点有子节点
+        if(replacement != NULL)
         {
-            if(node == leftOf(parentOf(node)))
+            //重置删除后的父子节点关系
+            setParent(replacement, parentOf(node));
+            if (parentOf(node) == NULL)
+                m_Root = curOf(replacement); //如果要删除的节点没有父节点，则他的子节点成为新的根节点
+            else if (node == leftOf(parentOf(node)))
+                setLeft(parentOf(node), replacement); //是父节点的左子树
+            else
+                setRight(parentOf(node), replacement);
+
+            // Fix replacement
+            if (isBlack(node))
+                removeFixUp(replacement);
+
+        }else if(parentOf(node) == NULL)//如果要删除的节点没有父节点，则删除的节点是根节点,直接把根节点清掉返回
+        {
+            m_Root = 0;
+        }else //No children. Use self as phantom replacement and unlink.
+        {
+            if(isBlack(node))
             {
-                setLeft(parentOf(node),NULL);
-            }else if(node == rightOf(parentOf(node)))
-            {
-                setRight(parentOf(node),NULL);
+                removeFixUp(node);
             }
-            setParent(node,NULL);
+
+            if(parentOf(node) != NULL)
+            {
+                if(node == leftOf(parentOf(node)))
+                {
+                    setLeft(parentOf(node),NULL);
+                }else if(node == rightOf(parentOf(node)))
+                {
+                    setRight(parentOf(node),NULL);
+                }
+                setParent(node,NULL);
+            }
         }
+        node->clear_rb();
+        return node;
+    }else
+    {
+        NodeType_ *child, *parent;
+        RBTColor color;
+        // 被删除节点的"左右孩子都不为空"的情况。
+        if ((leftOf(node) != NULL) && (rightOf(node) != NULL))
+        {
+            // 被删节点的后继节点。(称为"取代节点")
+            // 用它来取代"被删节点"的位置，然后再将"被删节点"去掉。
+            NodeType_ *replace = node;
+            // 获取后继节点
+            replace = rightOf(replace);
+            while (leftOf(replace) != NULL)
+                replace = leftOf(replace);
+
+            // "node节点"不是根节点(只有根节点不存在父节点)
+            if (parentOf(node))
+            {
+                if (leftOf(parentOf(node)) == node)
+                    setLeft(parentOf(node),replace);
+                else
+                    setRight(parentOf(node),replace);
+            }
+            else
+                // "node节点"是根节点，更新根节点。
+                m_Root = curOf(replace);
+
+            // child是"取代节点"的右孩子，也是需要"调整的节点"。
+            // "取代节点"肯定不存在左孩子！因为它是一个后继节点。
+            child = rightOf(replace);
+            parent = parentOf(replace);
+            // 保存"取代节点"的颜色
+            color = rbColorOf(replace);
+
+            // "被删除节点"是"它的后继节点的父节点"
+            if (parent == node)
+            {
+                parent = replace;
+            }
+            else
+            {
+                // child不为空
+                if (child)
+                    setParent(child,parent);
+                setLeft(parent,child);
+                setRight(replace,rightOf(node));
+                setParent(rightOf(node), replace);
+            }
+
+            setParent(replace,parentOf(node));
+            setRbColor(replace,rbColorOf(node));
+            setLeft(replace,leftOf(node));
+            setParent(leftOf(node),replace);
+
+            if (color == RB_BLACK)
+                removeFixUp(child, parent);
+
+            node->clear_rb();
+            return node;
+        }
+
+        if (leftOf(node) !=NULL)
+            child = leftOf(node);
+        else
+            child = rightOf(node);
+
+        parent = parentOf(node);
+        // 保存"取代节点"的颜色
+        color = rbColorOf(node);
+
+        if (child)
+            setParent(child,parent);
+
+        // "node节点"不是根节点
+        if (parent)
+        {
+            if (leftOf(parent) == node)
+                setLeft(parent,child);
+            else
+                setRight(parent,child);
+        }
+        else
+            m_Root = curOf(child);
+
+        if (color == RB_BLACK)
+            removeFixUp(child, parent);
+        node->clear_rb();
+        return node;
     }
-    node->clear_rb();
-    return node;
 }
 
 /*
@@ -974,13 +1158,13 @@ inline RBTColor RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::rbColorOf(NodeType_
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
 inline bool RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::isRed(NodeType_* node)
 {
-    return (node != NULL && (node->get_color() & RB_RED));
+    return (node != NULL && (node->get_color() == RB_RED));
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
 inline bool RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::isBlack(NodeType_* node)
 {
-    return (node == NULL || (node->get_color() & RB_BLACK));
+    return (node == NULL || (node->get_color() == RB_BLACK));
 }
 
 template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t Cap_>
@@ -1013,11 +1197,6 @@ template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t C
 inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::leftOf(NodeType_* node)
 {
     if(node == NULL) return NULL;
-    //如果是最小节点，则左子树为空(实际上不为空，为了方便遍历hash_map，左子树指向了hash_map红黑树链的前一个树的root节点)
-    if(node->get_color() == RB_NONE || node->get_color() & RB_MIN_NODE)
-    {
-        return  NULL;
-    }
     return getNode(node->get_left());
 }
 
@@ -1034,11 +1213,6 @@ template<typename KeyType_,typename ValueType_,typename INDEX_TYPE,std::size_t C
 inline NodeType_* RBTree<KeyType_,ValueType_,INDEX_TYPE,Cap_>::rightOf(NodeType_* node)
 {
     if(node == NULL) return  NULL;
-    //如果是最大节点，则左子树为空(实际上不为空，为了方便遍历hash_map，左子树指向了hash_map红黑树链的下一个树的root节点)
-    if(node->get_color() == RB_NONE || node->get_color() & RB_MAX_NODE)
-    {
-        return  NULL;
-    }
     return getNode(node->get_right());
 }
 
