@@ -395,40 +395,46 @@ void testformance()
     }
     end = GetUSTime();
     printf("RbtHashMap<int,ValueType,%d>[conflict count = %d] find use  %ld ms,res = %llu\n",TEST_COUNT,HASH_CONFLICT_COUNT1,(end - start) / 1000,res);
+    delete testMap;
+    testMap = NULL;
     printf("------------------------------------------------------------------------\n");
-    std::map<int,ValueType> stdtMap;
-    start = GetUSTime();
-    for(int i = 0;i < TEST_COUNT;i++)
     {
-        stdtMap.insert(std::make_pair(i * HASH_CONFLICT_COUNT, ValueType (i)));
+        std::map<int,ValueType> stdtMap;
+        start = GetUSTime();
+        for(int i = 0;i < TEST_COUNT;i++)
+        {
+            stdtMap.insert(std::make_pair(i * HASH_CONFLICT_COUNT, ValueType (i)));
+        }
+        end = GetUSTime();
+        printf("std::map<int,ValueType> insert use  %ld ms\n",(end - start) / 1000);
+        start = GetUSTime();
+        res = 0;
+        for(int i = 0;i < TEST_COUNT;i++)
+        {
+            res += stdtMap.find(i * HASH_CONFLICT_COUNT)->second.a;
+        }
+        end = GetUSTime();
+        printf("std::map<int,ValueType> find use  %ld ms,res = %llu\n",(end - start) / 1000,res);
     }
-    end = GetUSTime();
-    printf("std::map<int,ValueType> insert use  %ld ms\n",(end - start) / 1000);
-    start = GetUSTime();
-    res = 0;
-    for(int i = 0;i < TEST_COUNT;i++)
-    {
-        res += stdtMap.find(i * HASH_CONFLICT_COUNT)->second.a;
-    }
-    end = GetUSTime();
-    printf("std::map<int,ValueType> find use  %ld ms,res = %llu\n",(end - start) / 1000,res);
     printf("------------------------------------------------------------------------\n");
-    std::unordered_map<int,ValueType> testUnorderMap;
-    start = GetUSTime();
-    for(int i = 0;i < TEST_COUNT;i++)
     {
-        testUnorderMap.insert(std::make_pair(i * HASH_CONFLICT_COUNT, ValueType(i)));
+        std::unordered_map<int,ValueType> testUnorderMap;
+        start = GetUSTime();
+        for(int i = 0;i < TEST_COUNT;i++)
+        {
+            testUnorderMap.insert(std::make_pair(i * HASH_CONFLICT_COUNT, ValueType(i)));
+        }
+        end = GetUSTime();
+        printf("std::unordered_map<int,ValueType> insert use  %ld ms\n",(end - start) / 1000);
+        res = 0;
+        start = GetUSTime();
+        for(int i = 0;i < TEST_COUNT;i++)
+        {
+            res += testUnorderMap.find(i * HASH_CONFLICT_COUNT)->second.a;
+        }
+        end = GetUSTime();
+        printf("std::unordered_map<int,ValueType> find use  %ld ms,res = %llu\n",(end - start) / 1000,res);
     }
-    end = GetUSTime();
-    printf("std::unordered_map<int,ValueType> insert use  %ld ms\n",(end - start) / 1000);
-    res = 0;
-    start = GetUSTime();
-    for(int i = 0;i < TEST_COUNT;i++)
-    {
-        res += testUnorderMap.find(i * HASH_CONFLICT_COUNT)->second.a;
-    }
-    end = GetUSTime();
-    printf("std::unordered_map<int,ValueType> find use  %ld ms,res = %llu\n",(end - start) / 1000,res);
     printf("-----------------------------test performance done-------------------------------------------\n");
     return;
 }
