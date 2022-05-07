@@ -369,6 +369,11 @@ private:
             //call c++ placement new
             //把空闲头结点指向当前空闲头结点的下一个节点
             free_node_head_ = p->get_next();
+            node_type *newhead = get_node(free_node_head_);
+            if(newhead != NULL)
+            {
+                newhead->set_prev(0);
+            }
             p->set_key(v.first);
             IndexType_ index = p->get_data();
             if(index > 0 && index <= Cap_)

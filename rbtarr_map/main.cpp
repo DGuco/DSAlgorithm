@@ -1,7 +1,11 @@
 #include <iostream>
 #include <list>
 #include <unordered_map>
+#include <pthread.h>
 #include <sys/time.h>
+#include <unistd.h>
+#include <mutex>
+
 #include "rbthash_map.h"
 #include "rb_tree.h"
 
@@ -21,7 +25,7 @@ using namespace std;
 #define REMOVE_COUNT 500000
 #define RB_COUNT 5000
 #define HASH_CONFLICT_COUNT 5
-#define HASH_CONFLICT_COUNT1 1000
+#define HASH_CONFLICT_COUNT1 10000
 
 void testRBTree()
 {
@@ -357,11 +361,11 @@ time_t GetUSTime()
 
 void testformance()
 {
+    // 设置种子
+    srand( (unsigned)time( NULL ) );
     time_t start = 0;
     time_t end = 0;
     unsigned long long res = 0;
-
-
     printf("---------------------------test performance begin---------------------------------------------\n");
     RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
     start = GetUSTime();
@@ -439,6 +443,93 @@ void testformance()
     return;
 }
 
+RbtHashMap<int,ValueType,TEST_COUNT>* g_testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
+std::unordered_map<int,ValueType> g_testUnorderMap;
+std::mutex g_mtx;
+bool g_exit = 0;
+
+void* consume_insert(void* data)
+{
+    // 设置种子
+    srand( (unsigned)time( NULL ) );
+    unsigned int time = 0;
+    while(true && !g_exit)
+    {
+        usleep(10);
+        time += 10;
+        if(time >= (1000 * 1000))
+        {
+            printf("consume_insert.....\n");
+            time = 0;
+        }
+        {
+            std::lock_guard<std::mutex> lck(g_mtx);
+            if(g_testUnorderMap.size() >= TEST_COUNT)
+            {
+                continue;
+            }else
+            {
+                int key = rand();
+                if(g_testUnorderMap.find(key) == g_testUnorderMap.end())
+                {
+                    g_testUnorderMap.insert(std::make_pair(key,ValueType(key)));
+                    if(!g_testMap->insert(key,key))
+                    {
+                        g_exit = 1;
+                        printf("consume_insert insert failed testmap key = %d\n", key);
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void* consume_remove(void* data)
+{
+    unsigned int time = 0;
+    while (true && !g_exit)
+    {
+        usleep(10);
+        time += 10;
+        if (time >= (1000 * 1000)) {
+            printf("consume_remove.....\n");
+            time = 0;
+        }
+        {
+            std::lock_guard<std::mutex> lck(g_mtx);
+            std::unordered_map<int, ValueType>::iterator it = g_testUnorderMap.begin();
+            if (it != g_testUnorderMap.end())
+            {
+                if (g_testMap->find(it->first) == g_testMap->end()) {
+                    g_exit = 1;
+                    printf("consume_remove find failed testmap lost key = %d\n", it->first);
+                    return 0;
+                }
+                g_testUnorderMap.erase(it->first);
+                if (!g_testMap->erase(it->first))
+                {
+                    g_exit = 1;
+                    printf("consume_remove erase failed testmap lost key = %d\n", it->first);
+                    return 0;
+                }
+            }
+        }
+    }
+}
+
+
+void testconsume()
+{
+    printf("-----------------------------test consume begin-------------------------------------------\n");
+    pthread_t t1,t2;
+    pthread_create(&t1,0,consume_insert,NULL);
+    pthread_create(&t2,0,consume_remove,NULL);
+    pthread_join(t1,NULL);
+    pthread_join(t2,NULL);
+    printf("-----------------------------test consume done-------------------------------------------\n");
+}
+
 int main()
 {
     testRBTree();
@@ -446,5 +537,6 @@ int main()
     testremove();
     testmempool();
     testformance();
+    testconsume();
     std::cout << "Test Done,Hello, World!" << std::endl;
 }
