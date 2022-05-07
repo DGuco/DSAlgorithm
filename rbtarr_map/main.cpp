@@ -267,10 +267,84 @@ void testremove()
     delete testMap;
     testMap = NULL;
 }
+
+void testmempool()
+{
+    // 设置种子
+    srand( (unsigned)time( NULL ) );
+    printf("==========================test mempool begin===================================\n");
+    RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
+    std::unordered_map<int,ValueType> stdmap;
+    while(true)
+    {
+        int key = rand();
+        if(stdmap.find(key) == stdmap.end())
+        {
+            stdmap.insert(std::make_pair(key,ValueType(key)));
+            testMap->insert(key,key);
+        }
+
+        if(stdmap.size() >= TEST_COUNT)
+        {
+            break;
+        }
+    }
+
+    std::unordered_map<int,ValueType>::iterator stdit = stdmap.begin();
+    int count = 0;
+    for(;stdit != stdmap.end();)
+    {
+        if(!testMap->erase(stdit->first))
+        {
+            printf("test mempool failed never remove key = %d\n",stdit->first);
+            exit(0);
+        }
+        stdit = stdmap.erase(stdit);
+        count++;
+        if(count >= REMOVE_COUNT)
+        {
+            break;
+        }
+    }
+
+    if(stdmap.size() != testMap->size())
+    {
+        printf("test mempool failed stdsize = %d,rbtsize = %d\n",stdmap.size(),testMap->size());
+        exit(0);
+    }
+
+    while(true)
+    {
+        int key = rand();
+        if(stdmap.find(key) == stdmap.end())
+        {
+            stdmap.insert(std::make_pair(key,ValueType(key)));
+            if(!testMap->insert(key,key))
+            {
+                printf("test mempool failed some mem not reuse\n",stdmap.size(),testMap->size());
+            }
+        }
+
+        if(stdmap.size() >= TEST_COUNT)
+        {
+            break;
+        }
+    }
+    if(stdmap.size() != testMap->size())
+    {
+        printf("test mempool failed stdsize = %d,rbtsize = %d\n",stdmap.size(),testMap->size());
+        exit(0);
+    }
+    printf("==========================test mempool done===================================\n");
+    delete testMap;
+    testMap = NULL;
+}
+
 int main()
 {
     testRBTree();
     testInsert();
     testremove();
+    testmempool();
     std::cout << "Test Done,Hello, World!" << std::endl;
 }
