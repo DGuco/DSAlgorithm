@@ -367,7 +367,7 @@ void testformance()
     start = GetUSTime();
     for(int i = 0;i < TEST_COUNT;i++)
     {
-        testMap->insert(i * HASH_CONFLICT_COUNT, ValueType(i * HASH_CONFLICT_COUNT));
+        testMap->insert(i * HASH_CONFLICT_COUNT, ValueType(i));
     }
     end = GetUSTime();
     printf("RbtHashMap<int,ValueType,%d>[conflict count = %d], insert use  %ld ms\n",TEST_COUNT,HASH_CONFLICT_COUNT,(end - start) / 1000);
@@ -383,7 +383,7 @@ void testformance()
     start = GetUSTime();
     for(int i = 0;i < TEST_COUNT;i++)
     {
-        testMap->insert(i * HASH_CONFLICT_COUNT1, ValueType(i * HASH_CONFLICT_COUNT1));
+        testMap->insert(i * HASH_CONFLICT_COUNT1, ValueType(i));
     }
     end = GetUSTime();
     printf("RbtHashMap<int,ValueType,%d>[conflict count = %d], insert use  %ld ms\n",TEST_COUNT,HASH_CONFLICT_COUNT1,(end - start) / 1000);
@@ -400,7 +400,7 @@ void testformance()
     start = GetUSTime();
     for(int i = 0;i < TEST_COUNT;i++)
     {
-        stdtMap.insert(std::make_pair(i * HASH_CONFLICT_COUNT, ValueType (i * HASH_CONFLICT_COUNT)));
+        stdtMap.insert(std::make_pair(i * HASH_CONFLICT_COUNT, ValueType (i)));
     }
     end = GetUSTime();
     printf("std::map<int,ValueType> insert use  %ld ms\n",(end - start) / 1000);
@@ -417,7 +417,7 @@ void testformance()
     start = GetUSTime();
     for(int i = 0;i < TEST_COUNT;i++)
     {
-        testUnorderMap.insert(std::make_pair(i * HASH_CONFLICT_COUNT, ValueType(i * HASH_CONFLICT_COUNT)));
+        testUnorderMap.insert(std::make_pair(i * HASH_CONFLICT_COUNT, ValueType(i)));
     }
     end = GetUSTime();
     printf("std::unordered_map<int,ValueType> insert use  %ld ms\n",(end - start) / 1000);
