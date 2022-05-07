@@ -1,6 +1,7 @@
 #include <iostream>
 #include <list>
 #include <unordered_map>
+#include <sys/time.h>
 #include "rbthash_map.h"
 #include "rb_tree.h"
 
@@ -19,6 +20,7 @@ using namespace std;
 #define TEST_COUNT 1000000
 #define REMOVE_COUNT 500000
 #define RB_COUNT 5000
+#define HASH_CONFLICT_RATE 5
 
 void testRBTree()
 {
@@ -340,11 +342,86 @@ void testmempool()
     testMap = NULL;
 }
 
+// 获取当前微秒
+time_t GetUSTime()
+{
+    struct timeval tmval = {0};
+    int nRetCode = gettimeofday(&tmval, NULL);
+    if (nRetCode != 0)
+    {
+        return 0;
+    }
+    return ((tmval.tv_sec * 1000 * 1000) + tmval.tv_usec);
+}
+
+void testformance()
+{
+    time_t start = 0;
+    time_t end = 0;
+    unsigned long long res = 0;
+
+
+    printf("---------------------------test performance begin---------------------------------------------\n");
+    RbtHashMap<int,ValueType,TEST_COUNT>* testMap = new RbtHashMap<int,ValueType,TEST_COUNT>();
+    start = GetUSTime();
+    for(int i = 0;i < TEST_COUNT;i++)
+    {
+        testMap->insert(i * HASH_CONFLICT_RATE,ValueType(i * HASH_CONFLICT_RATE));
+    }
+    end = GetUSTime();
+    printf("RbtHashMap<int,ValueType,%d> insert use  %ld ms\n",TEST_COUNT,(end - start) / 1000);
+    start = GetUSTime();
+    res = 0;
+    for(int i = 0;i < TEST_COUNT;i++)
+    {
+        res += testMap->find(i * HASH_CONFLICT_RATE)->second->a;
+    }
+    end = GetUSTime();
+    printf("RbtHashMap<int,ValueType,%d> find use  %ld ms,res = %llu\n",TEST_COUNT,(end - start) / 1000,res);
+    printf("------------------------------------------------------------------------\n");
+    std::map<int,ValueType> stdtMap;
+    start = GetUSTime();
+    for(int i = 0;i < TEST_COUNT;i++)
+    {
+        stdtMap.insert(std::make_pair(i * HASH_CONFLICT_RATE,ValueType (i * HASH_CONFLICT_RATE)));
+    }
+    end = GetUSTime();
+    printf("std::map<int,ValueType> insert use  %ld ms\n",(end - start) / 1000);
+    start = GetUSTime();
+    res = 0;
+    for(int i = 0;i < TEST_COUNT;i++)
+    {
+        res += stdtMap.find(i * HASH_CONFLICT_RATE)->second.a;
+    }
+    end = GetUSTime();
+    printf("std::map<int,ValueType> find use  %ld ms,res = %llu\n",(end - start) / 1000,res);
+    printf("------------------------------------------------------------------------\n");
+    std::unordered_map<int,ValueType> testUnorderMap;
+    start = GetUSTime();
+    for(int i = 0;i < TEST_COUNT;i++)
+    {
+        testUnorderMap.insert(std::make_pair(i * HASH_CONFLICT_RATE,ValueType(i * HASH_CONFLICT_RATE)));
+    }
+    end = GetUSTime();
+    printf("std::unordered_map<int,ValueType> insert use  %ld ms\n",(end - start) / 1000);
+    res = 0;
+    start = GetUSTime();
+    for(int i = 0;i < TEST_COUNT;i++)
+    {
+        res += testUnorderMap.find(i * HASH_CONFLICT_RATE)->second.a;
+    }
+    end = GetUSTime();
+    printf("std::testUnorderMap<int,ValueType> find use  %ld ms,res = %llu\n",(end - start) / 1000,res);
+    printf("-----------------------------test performance done-------------------------------------------\n");
+    return;
+}
+
 int main()
 {
     testRBTree();
     testInsert();
     testremove();
     testmempool();
+    testformance();
     std::cout << "Test Done,Hello, World!" << std::endl;
 }
