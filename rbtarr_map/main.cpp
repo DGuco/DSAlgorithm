@@ -26,7 +26,7 @@ using namespace std;
 #define RB_COUNT 5000
 #define HASH_CONFLICT_COUNT 5
 #define HASH_CONFLICT_COUNT1 10000
-
+#define COMSUME_KEEP_TIME 60 * 1000 * 1000
 void testRBTree()
 {
     printf("==========================test rbtree start===================================\n");
@@ -447,20 +447,19 @@ RbtHashMap<int,ValueType,TEST_COUNT>* g_testMap = new RbtHashMap<int,ValueType,T
 std::unordered_map<int,ValueType> g_testUnorderMap;
 std::mutex g_mtx;
 bool g_exit = 0;
-
+bool g_print1 = 0;
+bool g_print2 = 0;
 void* consume_insert(void* data)
 {
     // 设置种子
     srand( (unsigned)time( NULL ) );
-    unsigned int time = 0;
+    unsigned int count = 0;
     while(true && !g_exit)
     {
-        usleep(10);
-        time += 10;
-        if(time >= (1000 * 1000))
+        if(g_print1)
         {
-            printf("consume_insert.....\n");
-            time = 0;
+            printf("consume inserting .....\n");
+            g_print1 = 0;
         }
         {
             std::lock_guard<std::mutex> lck(g_mtx);
@@ -479,22 +478,23 @@ void* consume_insert(void* data)
                         printf("consume_insert insert failed testmap key = %d\n", key);
                         return 0;
                     }
+                    count++;
                 }
             }
         }
     }
+    printf("consume_insert insert count = %d\n", count);
 }
 
 void* consume_remove(void* data)
 {
-    unsigned int time = 0;
+    unsigned int count = 0;
     while (true && !g_exit)
     {
-        usleep(10);
-        time += 10;
-        if (time >= (1000 * 1000)) {
-            printf("consume_remove.....\n");
-            time = 0;
+        if(g_print2)
+        {
+            printf("consume removing .....\n");
+            g_print2 = 0;
         }
         {
             std::lock_guard<std::mutex> lck(g_mtx);
@@ -513,20 +513,46 @@ void* consume_remove(void* data)
                     printf("consume_remove erase failed testmap lost key = %d\n", it->first);
                     return 0;
                 }
+                count++;
             }
         }
     }
+    printf("consume_insert remove count = %d\n", count);
 }
 
 
 void testconsume()
 {
     printf("-----------------------------test consume begin-------------------------------------------\n");
+    printf("test consume need time %d S,please waiting\n",COMSUME_KEEP_TIME / 1000 / 1000);
     pthread_t t1,t2;
+    time_t start = GetUSTime();
     pthread_create(&t1,0,consume_insert,NULL);
     pthread_create(&t2,0,consume_remove,NULL);
+    time_t lasttime = COMSUME_KEEP_TIME;
+    time_t printstart = start;
+    while (true)
+    {
+        time_t now = GetUSTime();
+        if(now - printstart >= 5 * 1000 * 1000)
+        {
+            lasttime = lasttime - (now - printstart);
+            printf("test consume last time %ld S,please waiting\n",lasttime / 1000 / 1000);
+            g_print1 = 1;
+            g_print2 = 1;
+            printstart = now;
+        }
+        time_t keep = now - start;
+        if(keep >= COMSUME_KEEP_TIME)
+        {
+            g_exit = 1;
+            break;
+        }
+        usleep(10);
+    }
     pthread_join(t1,NULL);
     pthread_join(t2,NULL);
+    printf("test consume keep time %d S\n",COMSUME_KEEP_TIME / 1000 / 1000);
     printf("-----------------------------test consume done-------------------------------------------\n");
 }
 
