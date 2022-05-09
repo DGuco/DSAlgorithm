@@ -21,7 +21,7 @@
 
 using namespace rbt_hash;
 using namespace std;
-#define TEST_COUNT 100000
+#define TEST_COUNT 1000000
 #define REMOVE_COUNT 50000
 #define RB_COUNT 5000
 #define HASH_CONFLICT_COUNT 5
