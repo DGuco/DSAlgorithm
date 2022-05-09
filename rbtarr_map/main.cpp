@@ -506,11 +506,12 @@ void* consume_remove(void* data)
                     printf("consume_remove find failed testmap lost key = %d\n", it->first);
                     return 0;
                 }
-                g_testUnorderMap.erase(it->first);
-                if (!g_testMap->erase(it->first))
+                int key = it->first;
+                g_testUnorderMap.erase(key);
+                if (!g_testMap->erase(key))
                 {
                     g_exit = 1;
-                    printf("consume_remove erase failed testmap lost key = %d\n", it->first);
+                    printf("consume_remove erase failed testmap lost key = %d\n", key);
                     return 0;
                 }
                 count++;
