@@ -62,7 +62,7 @@ public:
                 return false;
             }
             rb_tree.insert(new_node);
-            int oldhead = hash_array_.rb_tree_head_bucket();
+            IndexType_ oldhead = hash_array_.rb_tree_head_bucket();
             //设置root信息
             buckets_[bucket].root_ = rb_tree.root();
             //新的rbtree成为新的树链头部,重新设置树链的前后指针
