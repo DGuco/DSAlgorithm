@@ -218,6 +218,7 @@ public:
     //清理
     void clear()
     {
+        size_ = 0;
         for(int index = 0;index < size_;index++)
         {
             data_array_[index].value().~ValueType_();
@@ -235,7 +236,6 @@ public:
         }
         //设置后向节点为空
         node_array_[Cap_ - 1].set_next(0);
-        size_ = 0;
         //已用的节点链表头节点的索引
         rb_tree_head_bucket_ = 0;
         //默认数组首个元素即可用节点链表的头结点
