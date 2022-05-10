@@ -146,10 +146,6 @@ public:
             buckets_[bucket].root_ = rb_tree.root();
         }else//树删空了
         {
-            if(hash_array_.size() == 1)
-            {
-                int a = 1;
-            }
             //update bucket info
             buckets_[bucket].root_ = 0;
             IndexType_ preBucket = buckets_[bucket].prebucket_;
