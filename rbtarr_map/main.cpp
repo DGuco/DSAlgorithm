@@ -228,7 +228,7 @@ void testremove()
     int count = 0;
     for(;stdit != stdmap.end();)
     {
-        if(!testMap->erase(stdit->first))
+        if(!testMap->erase_check(stdit->first))
         {
             printf("test remove failed never remove key = %d\n",stdit->first);
             exit(0);
@@ -270,6 +270,20 @@ void testremove()
         printf("test remove failed look map not all,last =  %d\n",stdmap.size());
         exit(0);
     }
+
+    RbtHashMap<int,ValueType,TEST_COUNT>::iterator  beginit = testMap->begin();
+    int erasecount = 0;
+    int size = testMap->size();
+    for(;beginit != testMap->end();)
+    {
+        beginit = testMap->erase(beginit);
+        erasecount++;
+    }
+    if(erasecount != size || testMap->size() != 0)
+    {
+        printf("test remove failed size = %d,erasecount = %d\n",size,erasecount);
+        exit(0);
+    }
     printf("==========================test remove done===================================\n");
     delete testMap;
     testMap = NULL;
@@ -301,7 +315,7 @@ void testmempool()
     int count = 0;
     for(;stdit != stdmap.end();)
     {
-        if(!testMap->erase(stdit->first))
+        if(!testMap->erase_check(stdit->first))
         {
             printf("test mempool failed never remove key = %d\n",stdit->first);
             exit(0);
@@ -342,6 +356,7 @@ void testmempool()
         printf("test mempool failed stdsize = %d,rbtsize = %d\n",stdmap.size(),testMap->size());
         exit(0);
     }
+
     printf("==========================test mempool done===================================\n");
     delete testMap;
     testMap = NULL;
@@ -508,7 +523,7 @@ void* consume_remove(void* data)
                 }
                 int key = it->first;
                 g_testUnorderMap.erase(key);
-                if (!g_testMap->erase(key))
+                if (!g_testMap->erase_check(key))
                 {
                     g_exit = 1;
                     printf("consume_remove erase failed testmap lost key = %d\n", key);
@@ -535,7 +550,7 @@ void testconsume()
     while (true)
     {
         time_t now = GetUSTime();
-        if(now - printstart >= 5 * 1000 * 1000)
+        if(now - printstart >= 20 * 1000 * 1000)
         {
             lasttime = lasttime - (now - printstart);
             printf("test consume last time %ld S,please waiting\n",lasttime / 1000 / 1000);

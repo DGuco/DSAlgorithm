@@ -15,6 +15,14 @@ using namespace std;
 
 namespace rbt_hash
 {
+/**
+ *
+ * @tparam KeyType_   key的类型
+ * @tparam ValueType_ value的类型
+ * @tparam _Cap      map的容量上限
+ * @tparam IndexType_   map的数组下标数据类型，默认为unsigned int(_Cap的大小必须小于IndexType_的最大值，ex:当IndexType_为unsigned int时_Cap支持的最大值为UINT_MAX -1)
+ *     给这个类型参数主要是为了当_Cap较小时可以有效的减少map的内存占用
+ */
 template <typename KeyType_, typename ValueType_, std::size_t _Cap,typename IndexType_ = unsigned int>
 class RbtHashMap
 {
@@ -114,11 +122,11 @@ public:
         return hash_array_.make_iterator(rb_tree.search(k),buckets_);
     }
 
-    bool erase( iterator it )
+    iterator erase( iterator it )
     {
         if(it == hash_array_.end() || it.curNode() == NULL)
         {
-            return false;
+            return hash_array_.end();
         }
 
         hash_function::hash<KeyType_> hash_func;
@@ -127,15 +135,21 @@ public:
         //该bucket是空的
         if ( rb_tree.isEmpty())
         {
-            return false;
+            return hash_array_.end();
         }
 
+        iterator tmit(it);
+        tmit++;
         node_type* remove_node = rb_tree.remove(it.curNode());
         if(!rb_tree.isEmpty())
         {
             buckets_[bucket].root_ = rb_tree.root();
         }else//树删空了
         {
+            if(hash_array_.size() == 1)
+            {
+                int a = 1;
+            }
             //update bucket info
             buckets_[bucket].root_ = 0;
             IndexType_ preBucket = buckets_[bucket].prebucket_;
@@ -157,6 +171,62 @@ public:
                 buckets_[nextBucket - 1].prebucket_ = 0;
                 hash_array_.set_rb_tree_head_bucket(nextBucket);
             }
+            else if(preBucket == 0 && nextBucket == 0)
+            {
+                hash_array_.set_rb_tree_head_bucket(0);
+            }
+            buckets_[bucket].prebucket_ = 0;
+            buckets_[bucket].nextbucket_ = 0;
+        }
+        hash_array_.deallocate_node(remove_node);
+        return tmit;
+    }
+
+    bool erase_check( iterator it )
+    {
+        if(it == hash_array_.end() || it.curNode() == NULL)
+        {
+            return false;
+        }
+
+        hash_function::hash<KeyType_> hash_func;
+        std::size_t bucket = hash_func(it->first) % _Cap;
+        tree_type rb_tree = hash_array_.make_rbtree(buckets_[bucket].root_);
+        //该bucket是空的
+        if ( rb_tree.isEmpty())
+        {
+            return false;
+        }
+
+        iterator tmit(it);
+        tmit++;
+        node_type* remove_node = rb_tree.remove(it.curNode());
+        if(!rb_tree.isEmpty())
+        {
+            buckets_[bucket].root_ = rb_tree.root();
+        }else//树删空了
+        {
+            //update bucket info
+            buckets_[bucket].root_ = 0;
+            IndexType_ preBucket = buckets_[bucket].prebucket_;
+            IndexType_ nextBucket = buckets_[bucket].nextbucket_;
+            //前后两棵树不为空，把前树的尾部指向后树，后树的头部指向前树
+            if((preBucket > 0 && preBucket <= _Cap)  && (nextBucket > 0 && nextBucket <= _Cap))
+            {
+                buckets_[preBucket - 1].nextbucket_ = nextBucket;
+                buckets_[nextBucket - 1].prebucket_ = preBucket;
+            }
+                //前树不为空后树为空
+            else if(preBucket > 0 && preBucket <= _Cap)
+            {
+                buckets_[preBucket - 1].nextbucket_ = 0;
+            }
+                //前树为空后树不为空,调整树链指针，并且后树成为新的树链的头
+            else if(nextBucket > 0 && nextBucket <= _Cap)
+            {
+                buckets_[nextBucket - 1].prebucket_ = 0;
+                hash_array_.set_rb_tree_head_bucket(nextBucket);
+            }
             buckets_[bucket].prebucket_ = 0;
             buckets_[bucket].nextbucket_ = 0;
         }
@@ -164,7 +234,12 @@ public:
         return true;
     }
 
-    bool erase( const KeyType_& k )
+    bool erase_check( const KeyType_& k )
+    {
+        return erase_check(find(k));
+    }
+
+    iterator erase( const KeyType_& k )
     {
         return erase(find(k));
     }
