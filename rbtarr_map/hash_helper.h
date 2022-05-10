@@ -207,18 +207,18 @@ public:
     //构造函数
     node_pool()
     {
+        size_ = 0;
     }
 
     //析构函数
     ~node_pool()
     {
-        clear();
+
     }
 
     //清理
     void clear()
     {
-        size_ = 0;
         for(int index = 0;index < size_;index++)
         {
             data_array_[index].value().~ValueType_();
@@ -234,6 +234,7 @@ public:
             node_array_[i].set_data(i + 1);
             node_array_[i].set_prev(i - 1 + 1/*真正的索引+1*/);
         }
+        size_ = 0;
         //设置后向节点为空
         node_array_[Cap_ - 1].set_next(0);
         //已用的节点链表头节点的索引
